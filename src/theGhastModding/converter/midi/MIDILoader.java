@@ -19,6 +19,8 @@ public class MIDILoader {
 	private long lengthInTicks;
 	private int notecount;
 	
+	//public static long tickLimit = Long.MAX_VALUE;
+	
 	public MIDILoader(File f) throws Exception {
 		this(new FileInputStream(f));
 	}
@@ -73,6 +75,8 @@ public class MIDILoader {
 				lengthInTicks = l;
 			}
 		}
+		//lengthInTicks = tickLimit;
+		System.out.println(notecount);
 		stream.close();
 	}
 	

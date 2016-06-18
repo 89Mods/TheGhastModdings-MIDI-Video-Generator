@@ -33,7 +33,7 @@ public class AboutDialog extends JDialog {
 		
 		JLabel lblMidiPlayerBy = new JLabel(TGMMIDIConverter.NAME + " version " + TGMMIDIConverter.VERSION + " by TheGhastModding");
 		lblMidiPlayerBy.setHorizontalAlignment(SwingConstants.CENTER);
-		lblMidiPlayerBy.setBounds(10, 11, 417, 14);
+		lblMidiPlayerBy.setBounds(10, 11, 442, 14);
 		getContentPane().add(lblMidiPlayerBy);
 		
 		JLabel copyright = new JLabel("Copyright(c) 2016 TheGhastModding");

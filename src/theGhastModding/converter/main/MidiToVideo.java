@@ -154,61 +154,7 @@ public class MidiToVideo implements Runnable {
 		}
 		noteTrackImages = new ArrayList<BufferedImage>();
 		for(Color c:trackColors){
-			BufferedImage tempImage = new BufferedImage(TGMMIDIConverterPanel.textures.note.getWidth(), TGMMIDIConverterPanel.textures.note.getHeight(), BufferedImage.TYPE_INT_RGB);
-			for(int i = 0; i < tempImage.getWidth(); i++){
-				for(int j = 0; j < tempImage.getHeight(); j++){
-					Color c2 = new Color(TGMMIDIConverterPanel.textures.note.getRGB(i, j));
-					if(c2.getRed() == 255 && c2.getGreen() == 255 && c2.getBlue() == 255){
-						tempImage.setRGB(i, j, c.getRGB());
-					}else if(c2.getRed() == 249 && c2.getGreen() == 249 && c2.getBlue() == 249){
-						int r,g,b;
-						r = c.getRed() - 10;
-						g = c.getGreen() - 10;
-						b = c.getBlue() - 10;
-						if(r < 0){
-							r = 0;
-						}
-						if(g < 0){
-							g = 0;
-						}
-						if(b < 0){
-							b = 0;
-						}
-						tempImage.setRGB(i, j, new Color(r, g, b).getRGB());
-					}else if(c2.getRed() == 234 && c2.getGreen() == 234 && c2.getBlue() == 234){
-						int r,g,b;
-						r = c.getRed() - 20;
-						g = c.getGreen() - 20;
-						b = c.getBlue() - 20;
-						if(r < 0){
-							r = 0;
-						}
-						if(g < 0){
-							g = 0;
-						}
-						if(b < 0){
-							b = 0;
-						}
-						tempImage.setRGB(i, j, new Color(r, g, b).getRGB());
-					}else{
-						int r,g,b;
-						r = c.getRed() - 30;
-						g = c.getGreen() - 30;
-						b = c.getBlue() - 30;
-						if(r < 0){
-							r = 0;
-						}
-						if(g < 0){
-							g = 0;
-						}
-						if(b < 0){
-							b = 0;
-						}
-						tempImage.setRGB(i, j, new Color(r, g, b).getRGB());
-					}
-				}
-			}
-			noteTrackImages.add(tempImage);
+			noteTrackImages.add(colorImage(c, TGMMIDIConverterPanel.textures.note));
 		}
 		int FPS = Integer.parseInt(TGMMIDIConverterPanel.settings.comboBox_1.getSelectedItem().toString());
 		double nanosecondsPerFrame = (1D / (double)FPS) * 1000000000D;
@@ -218,10 +164,22 @@ public class MidiToVideo implements Runnable {
 			double timerThen = 0;
 			double timerNow = -nanosecondsPerFrame;
 			double TPS = 0;
-			TempoEvent firstTempo = tempos.get(0);
+			TempoEvent firstTempo = null;
+			for(TempoEvent te:tempos){
+				if(te.getTick() == 0){
+					firstTempo = te;
+					break;
+				}
+			}
+			if(firstTempo == null){
+				JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Error loading MIDI", "Error", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
 			TPS = (firstTempo.getBpm() / 60) * resolution;
-			tempos.remove(0);
+			tempos.get(0).setUsed(true);
 			int counter = 0;
+			double d = -1;
+			int tempoToApply = -1;
 			while(tickPosition <= midiLength){
 				timerNow+=nanosecondsPerFrame;
 				tickPosition += ((((double)timerNow - (double)timerThen)/1000000000D) * TPS);
@@ -230,17 +188,22 @@ public class MidiToVideo implements Runnable {
 				if(tickPosition > midiLength){
 					continue;
 				}
-				int toRemove = -1;
 				for(int i = 0; i < tempos.size(); i++){
 					if(tempos.get(i) != null){
-						if(tempos.get(i).getTick() <= tickPosition){
-							TPS = (tempos.get(i).getBpm() / 60) * resolution;
-							toRemove = i;
+						if(tempos.get(i).getTick() <= tickPosition && !tempos.get(i).isUsed()){
+							if(tempos.get(i).getTick() > d){
+								d = tempos.get(i).getTick();
+								tempoToApply = i;
+							}
 						}
 					}
 				}
-				if(toRemove >= 0){
-					tempos.remove(toRemove);
+				if(d >= 0 && tempoToApply >= 0){
+					TPS = (tempos.get(tempoToApply).getBpm() / 60) * resolution;
+					System.err.println(tempos.get(tempoToApply).getBpm());
+					tempos.get(tempoToApply).setUsed(true);
+					d = -1;
+					tempoToApply = -1;
 				}
 				BufferedImage frame = renderSingleFrame(tickPosition, notes);
 				enc.encodeImage(frame);
@@ -260,9 +223,11 @@ public class MidiToVideo implements Runnable {
 	
 	private int zoom = 50;
 	
+	private int endOffset,offset;
+	
 	public BufferedImage renderSingleFrame(double position, List<Note> notes){
 		BufferedImage frame = new BufferedImage(frameWidth, frameHeight, BufferedImage.TYPE_INT_RGB);
-		zoom = (int)(((double)frameHeight / 100D) * (Integer.parseInt(TGMMIDIConverterPanel.settings.spinner.getValue().toString())));
+		zoom = Integer.parseInt(TGMMIDIConverterPanel.settings.spinner.getValue().toString());
 		Graphics2D g = (Graphics2D) frame.getGraphics();
 		g.setColor(Color.BLACK);
 		g.fillRect(0, 0, frameWidth, frameHeight);
@@ -275,14 +240,20 @@ public class MidiToVideo implements Runnable {
 		for(Note n:notes){
 			g.setColor(trackColors.get(n.getTrack()));
 			if(!(n.getStart() < position && n.getEnd() < position)){
-				int endOffset = (int)((position + zoom) - n.getEnd()) * (frameHeight / zoom);
-				int offset = (int)((position + zoom) - n.getStart()) * (frameHeight / zoom);
+				endOffset = (int)((position + frameHeight - n.getEnd()) * ((double)zoom / 10D));
+				offset = (int)((position + frameHeight - n.getStart()) * ((double)zoom / 10D));
 				if(endOffset < 0){
 					endOffset = 0;
 				}
 				if(offset >= 0 && offset - endOffset >= 0){
-					if(endOffset > frameHeight && offset - endOffset > frameHeight){
+					/*if(endOffset > frameHeight && offset - endOffset > frameHeight){
 						continue;
+					}*/
+					if(endOffset > frameHeight){
+						endOffset = frameHeight;
+					}
+					if(offset > frameHeight){
+						offset = frameHeight;
 					}
 					if(!TGMMIDIConverterPanel.settings.chckbxUseFancyNotes.isSelected()){
 						g.fillRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
@@ -294,6 +265,30 @@ public class MidiToVideo implements Runnable {
 		}
 		g.dispose();
 		return frame;
+	}
+	
+	public BufferedImage colorImage(Color c, BufferedImage toColor){
+		BufferedImage tempImage = new BufferedImage(toColor.getWidth(), toColor.getHeight(), BufferedImage.TYPE_INT_RGB);
+		for(int i = 0; i < tempImage.getWidth(); i++){
+			for(int j = 0; j < tempImage.getHeight(); j++){
+				Color c2 = new Color(toColor.getRGB(i, j));
+				int r = c.getRed() - (255 - c2.getRed());
+				int g = c.getGreen() - (255 - c2.getGreen());
+				int b = c.getBlue() - (255 - c2.getBlue());
+				//System.out.println(r + "," + g + "," + b);
+				if(r < 0){
+					r = 0;
+				}
+				if(g < 0){
+					g = 0;
+				}
+				if(b < 0){
+					b = 0;
+				}
+				tempImage.setRGB(i, j, new Color(r,g,b).getRGB());
+			}
+		}
+		return tempImage;
 	}
 	
 }

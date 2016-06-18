@@ -53,7 +53,6 @@ public class Track {
 			}
 		}
 		byteStream.close();
-		
 		return true;
 	}
 	
@@ -95,7 +94,7 @@ public class Track {
 		total += time;
 		int meta = byteStream.read();
 		if(meta == 0xFF){
-			int type = byteStream.read();
+			int type = byteStream.read() & 0xFF;
 			int length = (int)getVaribaleLengthValue(byteStream);
 			byte[] data = new byte[length];
 			if(length > 0){
@@ -117,18 +116,24 @@ public class Track {
 			if(meta >= 0xF4 && meta <= 0xFF){
 				return null;
 			}
-			int value1 = byteStream.read();
+			int value1 = byteStream.read() & 0xFF;
 			int value2 = 0;
 			if((!(meta >= 0xC0 && meta <= 0xDF)) && meta != 0xF3 && meta != 0xF1){
-				value2 = byteStream.read();
+				value2 = byteStream.read() & 0xFF;
 			}else{
 				if(meta >= 0xC0 && meta <= 0xCF){
-					return new ProgramChangeEvent(total, value1, meta - 0xC0);
+					return null;
 				}
 			}
 			if(meta == 0x90 || meta == 0x91 || meta == 0x92 || meta == 0x93 || meta == 0x94 || meta == 0x95 || meta == 0x96 || meta == 0x97 || meta == 0x98 || meta == 0x99 || meta == 0x9A || meta == 0x9B || meta == 0x9C || meta == 0x9D || meta == 0x9E || meta == 0x9F){
+				/*if(total > MIDILoader.tickLimit){
+					return null;
+				}*/
 				return new NoteOn(total, value1, value2, meta - 0x90);
 			}else if(meta == 0x80 || meta == 0x81 || meta == 0x82 || meta == 0x83 || meta == 0x84 || meta == 0x85 || meta == 0x86 || meta == 0x87 || meta == 0x88 || meta == 0x89 || meta == 0x8A || meta == 0x8B || meta == 0x8C || meta == 0x8D || meta == 0x8E || meta == 0x8F){
+				/*if(total > MIDILoader.tickLimit){
+					return null;
+				}*/
 				return new NoteOff(total, value1, value2, meta - 0x80);
 			}else{
 				return null;
@@ -137,7 +142,7 @@ public class Track {
 			int lol = 0;
 			byteStream.read();
 			while(lol != 0xF7){
-				lol = byteStream.read();
+				lol = byteStream.read() & 0xFF;
 			}
 			return null;
 		}else{

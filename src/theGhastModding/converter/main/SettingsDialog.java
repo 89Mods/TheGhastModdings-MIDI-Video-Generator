@@ -68,7 +68,7 @@ public class SettingsDialog extends JDialog {
 		getContentPane().add(lblZoom);
 		
 		spinner = new JSpinner();
-		spinner.setModel(new SpinnerNumberModel(100, 1, 100, 1));
+		spinner.setModel(new SpinnerNumberModel(10, 1, 100, 1));
 		spinner.setBounds(78, 95, 106, 20);
 		getContentPane().add(spinner);
 		
