@@ -6,16 +6,22 @@ import javax.imageio.ImageIO;
 
 public class Textures {
 	
-	public BufferedImage keys;
 	public BufferedImage note;
+	public BufferedImage blacknormal;
+	public BufferedImage blackpressed;
+	public BufferedImage whitenormal;
+	public BufferedImage whitepressed;
 	
 	public Textures() throws Exception {
 		loadTextures();
 	}
 	
 	public void loadTextures() throws Exception {
-		keys = ImageIO.read(this.getClass().getResourceAsStream("/keys.png"));
-		note = ImageIO.read(this.getClass().getResourceAsStream("/note.png"));
+		note = ImageIO.read(this.getClass().getResourceAsStream("/gradient_border.png"));
+		blacknormal = ImageIO.read(this.getClass().getResourceAsStream("/keys/blacknormal.png"));
+		blackpressed = ImageIO.read(this.getClass().getResourceAsStream("/keys/blackpressed.png"));
+		whitenormal = ImageIO.read(this.getClass().getResourceAsStream("/keys/whitenormal.png"));
+		whitepressed = ImageIO.read(this.getClass().getResourceAsStream("/keys/whitepressed.png"));
 	}
 	
 }

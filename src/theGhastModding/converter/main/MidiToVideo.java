@@ -153,8 +153,12 @@ public class MidiToVideo implements Runnable {
 			return;
 		}
 		noteTrackImages = new ArrayList<BufferedImage>();
+		coloredKeyboardTexturesWhite = new ArrayList<BufferedImage>();
+		coloredKeyboardTexturesBlack = new ArrayList<BufferedImage>();
 		for(Color c:trackColors){
 			noteTrackImages.add(colorImage(c, TGMMIDIConverterPanel.textures.note));
+			coloredKeyboardTexturesWhite.add(colorImage(c, TGMMIDIConverterPanel.textures.whitepressed));
+			coloredKeyboardTexturesBlack.add(colorImage(c, TGMMIDIConverterPanel.textures.blackpressed));
 		}
 		int FPS = Integer.parseInt(TGMMIDIConverterPanel.settings.comboBox_1.getSelectedItem().toString());
 		double nanosecondsPerFrame = (1D / (double)FPS) * 1000000000D;
@@ -180,6 +184,10 @@ public class MidiToVideo implements Runnable {
 			int counter = 0;
 			double d = -1;
 			int tempoToApply = -1;
+			keyStates = new KeyState[128];
+			for(int i = 0; i < keyStates.length; i++){
+				keyStates[i] = new KeyState();
+			}
 			while(tickPosition <= midiLength){
 				timerNow+=nanosecondsPerFrame;
 				tickPosition += ((((double)timerNow - (double)timerThen)/1000000000D) * TPS);
@@ -220,8 +228,18 @@ public class MidiToVideo implements Runnable {
 	
 	private int frameWidth = 640;
 	private int frameHeight = 360;
-	
 	private int zoom = 50;
+	
+	private KeyState[] keyStates;
+	public static boolean[] isWhiteKey = new boolean[]{
+			true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,
+			false,true,false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,
+			false,true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,false,true,
+			false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,false,
+			true,true,false,true
+		};
+	private List<BufferedImage> coloredKeyboardTexturesWhite;
+	private List<BufferedImage> coloredKeyboardTexturesBlack;
 	
 	private int endOffset,offset;
 	
@@ -235,11 +253,20 @@ public class MidiToVideo implements Runnable {
 		if(l == 0){
 			l = 1;
 		}
-		g.drawImage(TGMMIDIConverterPanel.textures.keys, 0, frameHeight - (50 * l), frameWidth, (50 * l), null);
+		
 		double keyLength = (double)frameWidth / 128D;
 		for(Note n:notes){
 			g.setColor(trackColors.get(n.getTrack()));
 			if(!(n.getStart() < position && n.getEnd() < position)){
+				if(n.getStart() < position + (l * 60) && n.isOnPlayed() == false){
+					n.setOnPlayed(true);
+					keyStates[n.getPitch()].setPressedTrack(n.getTrack());
+					keyStates[n.getPitch()].setIsPressed(true);
+				}
+				if(n.getEnd() < position + (l * 60) && n.isOffPlayed() == false){
+					n.setOffPlayed(true);
+					keyStates[n.getPitch()].setIsPressed(false);
+				}
 				endOffset = (int)((position + frameHeight - n.getEnd()) * ((double)zoom / 10D));
 				offset = (int)((position + frameHeight - n.getStart()) * ((double)zoom / 10D));
 				if(endOffset < 0){
@@ -260,6 +287,21 @@ public class MidiToVideo implements Runnable {
 					}else{
 						g.drawImage(noteTrackImages.get(n.getTrack()), (int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset, null);
 					}
+				}
+			}
+		}
+		for(int i = 0; i < 128; i++){
+			if(isWhiteKey[i]){
+				if(keyStates[i].isPressed()){
+					g.drawImage(coloredKeyboardTexturesWhite.get(keyStates[i].pressedTrack()), (int)keyLength * i, frameHeight - 60, (int)keyLength, 60, null);
+				}else{
+					g.drawImage(TGMMIDIConverterPanel.textures.whitenormal, (int)keyLength * i, frameHeight - 60, (int)keyLength, 60, null);
+				}
+			}else{
+				if(keyStates[i].isPressed()){
+					g.drawImage(coloredKeyboardTexturesBlack.get(keyStates[i].pressedTrack()), (int)keyLength * i, frameHeight - 60, (int)keyLength, 60, null);
+				}else{
+					g.drawImage(TGMMIDIConverterPanel.textures.blacknormal, (int)keyLength * i, frameHeight - 60, (int)keyLength, 60, null);
 				}
 			}
 		}
