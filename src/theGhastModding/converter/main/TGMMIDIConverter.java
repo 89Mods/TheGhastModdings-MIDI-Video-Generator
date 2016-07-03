@@ -5,7 +5,7 @@ import javax.swing.JFrame;
 public class TGMMIDIConverter {
 	
 	public static String NAME = "TheGhastModding's MIDI Video generator";
-	public static String VERSION = "d0_4";
+	public static String VERSION = "d0_5";
 	public static JFrame frame;
 	
 	public static void main(String[] args){

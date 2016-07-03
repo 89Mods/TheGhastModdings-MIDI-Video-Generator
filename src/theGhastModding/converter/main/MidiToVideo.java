@@ -188,6 +188,7 @@ public class MidiToVideo implements Runnable {
 			for(int i = 0; i < keyStates.length; i++){
 				keyStates[i] = new KeyState();
 			}
+			keyboardHeight = (int)((double)frameHeight / 100D * 7.3333333333333D);
 			while(tickPosition <= midiLength){
 				timerNow+=nanosecondsPerFrame;
 				tickPosition += ((((double)timerNow - (double)timerThen)/1000000000D) * TPS);
@@ -242,6 +243,7 @@ public class MidiToVideo implements Runnable {
 	private List<BufferedImage> coloredKeyboardTexturesBlack;
 	
 	private int endOffset,offset;
+	private int keyboardHeight;
 	
 	public BufferedImage renderSingleFrame(double position, List<Note> notes){
 		BufferedImage frame = new BufferedImage(frameWidth, frameHeight, BufferedImage.TYPE_INT_RGB);
@@ -258,14 +260,17 @@ public class MidiToVideo implements Runnable {
 		for(Note n:notes){
 			g.setColor(trackColors.get(n.getTrack()));
 			if(!(n.getStart() < position && n.getEnd() < position)){
-				if(n.getStart() < position + (l * 60) && n.isOnPlayed() == false){
+				if(n.getStart() < position + keyboardHeight && n.isOnPlayed() == false){
 					n.setOnPlayed(true);
-					keyStates[n.getPitch()].setPressedTrack(n.getTrack());
+					keyStates[n.getPitch()].addPressedTrack(n.getTrack());
 					keyStates[n.getPitch()].setIsPressed(true);
 				}
-				if(n.getEnd() < position + (l * 60) && n.isOffPlayed() == false){
+				if(n.getEnd() < position + keyboardHeight && n.isOffPlayed() == false){
 					n.setOffPlayed(true);
-					keyStates[n.getPitch()].setIsPressed(false);
+					keyStates[n.getPitch()].removePressedTrack(n.getTrack());
+					if(keyStates[n.getPitch()].pressedTracks().isEmpty()){
+						keyStates[n.getPitch()].setIsPressed(false);
+					}
 				}
 				endOffset = (int)((position + frameHeight - n.getEnd()) * ((double)zoom / 10D));
 				offset = (int)((position + frameHeight - n.getStart()) * ((double)zoom / 10D));
@@ -293,15 +298,15 @@ public class MidiToVideo implements Runnable {
 		for(int i = 0; i < 128; i++){
 			if(isWhiteKey[i]){
 				if(keyStates[i].isPressed()){
-					g.drawImage(coloredKeyboardTexturesWhite.get(keyStates[i].pressedTrack()), (int)keyLength * i, frameHeight - 60, (int)keyLength, 60, null);
+					g.drawImage(coloredKeyboardTexturesWhite.get(keyStates[i].pressedTracks().get(keyStates[i].pressedTracks().size() - 1)), (int)keyLength * i, frameHeight - keyboardHeight, (int)keyLength, keyboardHeight, null);
 				}else{
-					g.drawImage(TGMMIDIConverterPanel.textures.whitenormal, (int)keyLength * i, frameHeight - 60, (int)keyLength, 60, null);
+					g.drawImage(TGMMIDIConverterPanel.textures.whitenormal, (int)keyLength * i, frameHeight - keyboardHeight, (int)keyLength, keyboardHeight, null);
 				}
 			}else{
 				if(keyStates[i].isPressed()){
-					g.drawImage(coloredKeyboardTexturesBlack.get(keyStates[i].pressedTrack()), (int)keyLength * i, frameHeight - 60, (int)keyLength, 60, null);
+					g.drawImage(coloredKeyboardTexturesWhite.get(keyStates[i].pressedTracks().get(keyStates[i].pressedTracks().size() - 1)), (int)keyLength * i, frameHeight - keyboardHeight, (int)keyLength, keyboardHeight, null);
 				}else{
-					g.drawImage(TGMMIDIConverterPanel.textures.blacknormal, (int)keyLength * i, frameHeight - 60, (int)keyLength, 60, null);
+					g.drawImage(TGMMIDIConverterPanel.textures.blacknormal, (int)keyLength * i, frameHeight - keyboardHeight, (int)keyLength, keyboardHeight, null);
 				}
 			}
 		}

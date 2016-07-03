@@ -1,29 +1,36 @@
 package theGhastModding.converter.main;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class KeyState {
 	
 	private boolean isPressed;
-	private int pressedTrack;
+	private List<Integer> pressedTracks;
 	
 	public KeyState(){
 		isPressed = false;
-		pressedTrack = 0;
+		pressedTracks = new ArrayList<Integer>();
 	}
 	
 	public boolean isPressed(){
 		return isPressed;
 	}
 	
-	public int pressedTrack(){
-		return pressedTrack;
+	public synchronized List<Integer> pressedTracks(){
+		return pressedTracks;
 	}
 	
 	public void setIsPressed(boolean isPressed){
 		this.isPressed = isPressed;
 	}
 	
-	public void setPressedTrack(int pressedTrack){
-		this.pressedTrack = pressedTrack;
+	public void addPressedTrack(int pressedTrack){
+		this.pressedTracks.add(pressedTrack);
+	}
+	
+	public void removePressedTrack(int noLongerPressedTrack){
+		this.pressedTracks.remove((Integer)noLongerPressedTrack);
 	}
 	
 }
