@@ -1,6 +1,7 @@
 package theGhastModding.converter.main;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -59,6 +60,10 @@ public class MidiToVideo implements Runnable {
 			frameWidth = 640;
 			frameHeight = 360;
 		}
+		zoom = Integer.parseInt(TGMMIDIConverterPanel.settings.spinner.getValue().toString());
+		fancyNotes = TGMMIDIConverterPanel.settings.chckbxUseFancyNotes.isSelected();
+		fancyPiano = TGMMIDIConverterPanel.settings.chckbxUseFancyPiano.isSelected();
+		noteCounter = TGMMIDIConverterPanel.settings.chckbxShowNoteCounter.isSelected();
 		List<Note> notes = new ArrayList<Note>();
 		List<TempoEvent> tempos = new ArrayList<TempoEvent>();
 		double midiLength = 0;
@@ -71,6 +76,9 @@ public class MidiToVideo implements Runnable {
 			Track currentTrack = null;
 			List<MIDIEvent> events = null;
 			trackColors = new ArrayList<Color>();
+			for(Color c:TGMMIDIConverterPanel.settings.trackColours){
+				trackColors.add(c);
+			}
 			for(int i = 0; i < ml.getTrackCount(); i++){
 				trackColors.add(new Color(100 + rnd.nextInt(140),100 + rnd.nextInt(140),100 + rnd.nextInt(140)));
 			}
@@ -138,6 +146,7 @@ public class MidiToVideo implements Runnable {
 				}
 			}
 			InsertionSort.sortByTickTGMTempos(tempos);
+			noteCount = ml.getNoteCount();
 			System.out.println("Done loading MIDI");
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Error loading MIDI", "Error", JOptionPane.ERROR_MESSAGE);
@@ -176,7 +185,7 @@ public class MidiToVideo implements Runnable {
 				}
 			}
 			if(firstTempo == null){
-				JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Error loading MIDI", "Error", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Error loading MIDI: no tempo events found at tick 0", "Error", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
 			TPS = (firstTempo.getBpm() / 60) * resolution;
@@ -189,6 +198,7 @@ public class MidiToVideo implements Runnable {
 				keyStates[i] = new KeyState();
 			}
 			keyboardHeight = (int)((double)frameHeight / 100D * 7.3333333333333D);
+			totalPlayedNotes = 0;
 			while(tickPosition <= midiLength){
 				timerNow+=nanosecondsPerFrame;
 				tickPosition += ((((double)timerNow - (double)timerThen)/1000000000D) * TPS);
@@ -209,7 +219,6 @@ public class MidiToVideo implements Runnable {
 				}
 				if(d >= 0 && tempoToApply >= 0){
 					TPS = (tempos.get(tempoToApply).getBpm() / 60) * resolution;
-					System.err.println(tempos.get(tempoToApply).getBpm());
 					tempos.get(tempoToApply).setUsed(true);
 					d = -1;
 					tempoToApply = -1;
@@ -244,13 +253,22 @@ public class MidiToVideo implements Runnable {
 	
 	private int endOffset,offset;
 	private int keyboardHeight;
+	private int noteCount;
+	private int totalPlayedNotes;
+	
+	private boolean fancyNotes;
+	private boolean fancyPiano;
+	private boolean noteCounter;
 	
 	public BufferedImage renderSingleFrame(double position, List<Note> notes){
 		BufferedImage frame = new BufferedImage(frameWidth, frameHeight, BufferedImage.TYPE_INT_RGB);
-		zoom = Integer.parseInt(TGMMIDIConverterPanel.settings.spinner.getValue().toString());
 		Graphics2D g = (Graphics2D) frame.getGraphics();
 		g.setColor(Color.BLACK);
-		g.fillRect(0, 0, frameWidth, frameHeight);
+		if(TGMMIDIConverterPanel.settings.backgroundImage == null){
+			g.fillRect(0, 0, frameWidth, frameHeight);
+		}else{
+			g.drawImage(TGMMIDIConverterPanel.settings.backgroundImage, 0, 0, frameWidth, frameHeight, null);
+		}
 		int l = TGMMIDIConverterPanel.settings.comboBox_1.getSelectedIndex();
 		if(l == 0){
 			l = 1;
@@ -258,36 +276,34 @@ public class MidiToVideo implements Runnable {
 		
 		double keyLength = (double)frameWidth / 128D;
 		for(Note n:notes){
-			g.setColor(trackColors.get(n.getTrack()));
-			if(!(n.getStart() < position && n.getEnd() < position)){
-				if(n.getStart() < position + keyboardHeight && n.isOnPlayed() == false){
+				if(n.getStart() <= position + keyboardHeight && n.isOnPlayed() == false){
 					n.setOnPlayed(true);
+					totalPlayedNotes++;
 					keyStates[n.getPitch()].addPressedTrack(n.getTrack());
 					keyStates[n.getPitch()].setIsPressed(true);
 				}
-				if(n.getEnd() < position + keyboardHeight && n.isOffPlayed() == false){
+				if(n.getEnd() <= position + keyboardHeight && n.isOffPlayed() == false){
 					n.setOffPlayed(true);
 					keyStates[n.getPitch()].removePressedTrack(n.getTrack());
 					if(keyStates[n.getPitch()].pressedTracks().isEmpty()){
 						keyStates[n.getPitch()].setIsPressed(false);
 					}
 				}
+				if(!(n.getStart() <= position && n.getEnd() <= position)){
 				endOffset = (int)((position + frameHeight - n.getEnd()) * ((double)zoom / 10D));
 				offset = (int)((position + frameHeight - n.getStart()) * ((double)zoom / 10D));
 				if(endOffset < 0){
 					endOffset = 0;
 				}
 				if(offset >= 0 && offset - endOffset >= 0){
-					/*if(endOffset > frameHeight && offset - endOffset > frameHeight){
-						continue;
-					}*/
-					if(endOffset > frameHeight){
-						endOffset = frameHeight;
+					if(endOffset < 0){
+						endOffset = 0;
 					}
 					if(offset > frameHeight){
 						offset = frameHeight;
 					}
-					if(!TGMMIDIConverterPanel.settings.chckbxUseFancyNotes.isSelected()){
+					if(!fancyNotes){
+						g.setColor(trackColors.get(n.getTrack()));
 						g.fillRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
 					}else{
 						g.drawImage(noteTrackImages.get(n.getTrack()), (int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset, null);
@@ -295,20 +311,29 @@ public class MidiToVideo implements Runnable {
 				}
 			}
 		}
-		for(int i = 0; i < 128; i++){
-			if(isWhiteKey[i]){
-				if(keyStates[i].isPressed()){
-					g.drawImage(coloredKeyboardTexturesWhite.get(keyStates[i].pressedTracks().get(keyStates[i].pressedTracks().size() - 1)), (int)keyLength * i, frameHeight - keyboardHeight, (int)keyLength, keyboardHeight, null);
+		if(noteCounter){
+			g.setColor(Color.WHITE);
+			g.setFont(new Font("Dialog", Font.BOLD, 12));
+			g.drawString("Played Notes: " + totalPlayedNotes + "/" + noteCount, frameWidth - 300, 20);
+		}
+		if(fancyPiano){
+			for(int i = 0; i < 128; i++){
+				if(isWhiteKey[i]){
+					if(keyStates[i].isPressed()){
+						g.drawImage(coloredKeyboardTexturesWhite.get(keyStates[i].pressedTracks().get(keyStates[i].pressedTracks().size() - 1)), (int)keyLength * i, frameHeight - keyboardHeight, (int)keyLength, keyboardHeight, null);
+					}else{
+						g.drawImage(TGMMIDIConverterPanel.textures.whitenormal, (int)keyLength * i, frameHeight - keyboardHeight, (int)keyLength, keyboardHeight, null);
+					}
 				}else{
-					g.drawImage(TGMMIDIConverterPanel.textures.whitenormal, (int)keyLength * i, frameHeight - keyboardHeight, (int)keyLength, keyboardHeight, null);
-				}
-			}else{
-				if(keyStates[i].isPressed()){
-					g.drawImage(coloredKeyboardTexturesWhite.get(keyStates[i].pressedTracks().get(keyStates[i].pressedTracks().size() - 1)), (int)keyLength * i, frameHeight - keyboardHeight, (int)keyLength, keyboardHeight, null);
-				}else{
-					g.drawImage(TGMMIDIConverterPanel.textures.blacknormal, (int)keyLength * i, frameHeight - keyboardHeight, (int)keyLength, keyboardHeight, null);
+					if(keyStates[i].isPressed()){
+						g.drawImage(coloredKeyboardTexturesWhite.get(keyStates[i].pressedTracks().get(keyStates[i].pressedTracks().size() - 1)), (int)keyLength * i, frameHeight - keyboardHeight, (int)keyLength, keyboardHeight, null);
+					}else{
+						g.drawImage(TGMMIDIConverterPanel.textures.blacknormal, (int)keyLength * i, frameHeight - keyboardHeight, (int)keyLength, keyboardHeight, null);
+					}
 				}
 			}
+		}else{
+			g.drawImage(TGMMIDIConverterPanel.textures.keys, 0, frameHeight - keyboardHeight, frameWidth, keyboardHeight, null);
 		}
 		g.dispose();
 		return frame;

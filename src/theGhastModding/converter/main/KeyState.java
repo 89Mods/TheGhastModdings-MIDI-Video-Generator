@@ -31,6 +31,9 @@ public class KeyState {
 	
 	public void removePressedTrack(int noLongerPressedTrack){
 		this.pressedTracks.remove((Integer)noLongerPressedTrack);
+		while(this.pressedTracks.contains(noLongerPressedTrack)){
+			this.pressedTracks.remove((Integer)noLongerPressedTrack);
+		}
 	}
 	
 }

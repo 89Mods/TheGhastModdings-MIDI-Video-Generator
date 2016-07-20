@@ -1,18 +1,28 @@
 package theGhastModding.converter.main;
 
+import java.awt.Color;
 import java.awt.Dimension;
 
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JComboBox;
+import javax.imageio.ImageIO;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.awt.event.ActionEvent;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 @SuppressWarnings("serial")
 public class SettingsDialog extends JDialog {
@@ -22,11 +32,21 @@ public class SettingsDialog extends JDialog {
 	public JCheckBox chckbxUseFancyNotes;
 	private JLabel lblZoom;
 	public JSpinner spinner;
+	public List<Color> trackColours;
+	private String customThemePath = "";
+	private JLabel lblCustomTheme;
+	public JCheckBox chckbxUseFancyPiano;
+	private JButton btnLoadBackgroundimage;
+	public BufferedImage backgroundImage = null;
+	public JCheckBox chckbxShowNoteCounter;
 	
 	public SettingsDialog(JFrame frame){
 		super(frame, "Settings");
+		setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+		setLocationRelativeTo(frame);
+		trackColours = loadColorTheme("Default", true);
 		setModal(true);
-		setPreferredSize(new Dimension(350,300));
+		setPreferredSize(new Dimension(390,330));
 		getContentPane().setLayout(null);
 		
 		chckbxUseFancyNotes = new JCheckBox("Use fancy Notes");
@@ -43,8 +63,8 @@ public class SettingsDialog extends JDialog {
 		getContentPane().add(lblFps);
 		
 		comboBox = new JComboBox<String>();
-		comboBox.setModel(new DefaultComboBoxModel<String>(new String[] {"8K", "4K", "1080p", "720p", "480p", "320p"}));
-		comboBox.setSelectedIndex(3);
+		comboBox.setModel(new DefaultComboBoxModel<String>(new String[] {"1080p", "720p", "480p", "320p"}));
+		comboBox.setSelectedIndex(1);
 		comboBox.setBounds(78, 33, 106, 25);
 		getContentPane().add(comboBox);
 		
@@ -54,13 +74,27 @@ public class SettingsDialog extends JDialog {
 		comboBox_1.setBounds(78, 64, 106, 25);
 		getContentPane().add(comboBox_1);
 		
+		JComboBox<String> comboBox_2 = new JComboBox<String>();
+		comboBox_2.setModel(new DefaultComboBoxModel<String>(new String[] {"Default", "Black and white", "Default desaturated", "Default more desaturated", "Emex", "Emex2", "Evil", "PFA", "Synthesia", "Custom"}));
+		comboBox_2.setBounds(6, 150, 178, 25);
+		getContentPane().add(comboBox_2);
+		
+		chckbxShowNoteCounter = new JCheckBox("Show note counter in video");
+		chckbxShowNoteCounter.setBounds(188, 93, 184, 24);
+		getContentPane().add(chckbxShowNoteCounter);
+		
 		JButton btnOk = new JButton("OK");
 		btnOk.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				if(comboBox_2.getSelectedIndex() == 9){
+					trackColours = loadColorTheme(customThemePath, false);
+				}else{
+					trackColours = loadIntegratedColorThemeFromID(comboBox_2.getSelectedIndex());
+				}
 				makeInvisible();
 			}
 		});
-		btnOk.setBounds(10, 224, 98, 26);
+		btnOk.setBounds(6, 263, 98, 26);
 		getContentPane().add(btnOk);
 		
 		lblZoom = new JLabel("Zoom:");
@@ -68,9 +102,74 @@ public class SettingsDialog extends JDialog {
 		getContentPane().add(lblZoom);
 		
 		spinner = new JSpinner();
-		spinner.setModel(new SpinnerNumberModel(10, 1, 100, 1));
+		spinner.setEnabled(false);
+		spinner.setModel(new SpinnerNumberModel(10, 10, 100, 1));
 		spinner.setBounds(78, 95, 106, 20);
 		getContentPane().add(spinner);
+		
+		JLabel lblColorTheme = new JLabel("Color Theme:");
+		lblColorTheme.setBounds(6, 125, 178, 16);
+		getContentPane().add(lblColorTheme);
+		
+		lblCustomTheme = new JLabel("Custom Theme:");
+		lblCustomTheme.setBounds(6, 179, 326, 16);
+		getContentPane().add(lblCustomTheme);
+		
+		JFileChooser imageSelector = new JFileChooser();
+        FileFilter imageFilter = new FileNameExtensionFilter("Image files", 
+                "png", "jpg", "jpeg", "gif");  
+        imageSelector.setFileFilter(imageFilter);
+		JButton btnLoadCustomTheme = new JButton("Load Custom Theme");
+		btnLoadCustomTheme.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				imageSelector.setDialogTitle("Select custom color theme image");
+				int option = imageSelector.showOpenDialog(TGMMIDIConverter.frame);
+				if(option == JFileChooser.APPROVE_OPTION){
+					if(!imageSelector.getSelectedFile().exists()){
+						JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "The selected file doesnt exist", "Error", JOptionPane.ERROR_MESSAGE);
+						return;
+					}
+					customThemePath = imageSelector.getSelectedFile().getPath();
+					lblCustomTheme.setText("Custom Theme: " + imageSelector.getSelectedFile().getName());
+				}
+			}
+		});
+		btnLoadCustomTheme.setBounds(6, 207, 178, 26);
+		getContentPane().add(btnLoadCustomTheme);
+		
+		chckbxUseFancyPiano = new JCheckBox("Use fancy piano texture");
+		chckbxUseFancyPiano.setSelected(true);
+		chckbxUseFancyPiano.setBounds(157, 6, 175, 24);
+		getContentPane().add(chckbxUseFancyPiano);
+		
+		JLabel lblCurrentImageNull = new JLabel("Current image: null");
+		lblCurrentImageNull.setBounds(190, 68, 182, 16);
+		getContentPane().add(lblCurrentImageNull);
+		
+		btnLoadBackgroundimage = new JButton("Load Background Image");
+		btnLoadBackgroundimage.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				imageSelector.setDialogTitle("Select background image");
+				int option = imageSelector.showOpenDialog(TGMMIDIConverter.frame);
+				if(option == JFileChooser.APPROVE_OPTION){
+					if(!imageSelector.getSelectedFile().exists()){
+						JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "The selected file doesnt exist", "Error", JOptionPane.ERROR_MESSAGE);
+						return;
+					}
+					try {
+						backgroundImage = ImageIO.read(imageSelector.getSelectedFile());
+					} catch(Exception e2){
+						JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Error loading image", "Error", JOptionPane.ERROR_MESSAGE);
+						e2.printStackTrace();
+						backgroundImage = null;
+						return;
+					}
+					lblCurrentImageNull.setText("Current image: " + imageSelector.getSelectedFile().getName());
+				}
+			}
+		});
+		btnLoadBackgroundimage.setBounds(190, 33, 182, 26);
+		getContentPane().add(btnLoadBackgroundimage);
 		
 		this.setResizable(false);
 		pack();
@@ -82,5 +181,67 @@ public class SettingsDialog extends JDialog {
 	
 	public void makeInvisible(){
 		setVisible(false);
+	}
+	
+	private List<Color> loadIntegratedColorThemeFromID(int id){
+		if(id > 8){
+			return null;
+		}
+		if(id == 0){
+			return loadColorTheme("Default", true);
+		}
+		if(id == 1){
+			return loadColorTheme("Black and White", true);
+		}
+		if(id == 2){
+			return loadColorTheme("Default Desaturated", true);
+		}
+		if(id == 3){
+			return loadColorTheme("Default More Desaturated", true);
+		}
+		if(id == 4){
+			return loadColorTheme("Emex", true);
+		}
+		if(id == 5){
+			return loadColorTheme("Emex2", true);
+		}
+		if(id == 6){
+			return loadColorTheme("Evil", true);
+		}
+		if(id == 7){
+			return loadColorTheme("PFA", true);
+		}
+		if(id == 8){
+			return loadColorTheme("Synthesia", true);
+		}
+		return null;
+	}
+	
+	private List<Color> loadColorTheme(String filename, boolean integrated) {
+		BufferedImage colorTheme;
+		List<Color> colors = new ArrayList<Color>();
+		if(integrated){
+			try {
+				colorTheme = ImageIO.read(this.getClass().getResourceAsStream("/Color Themes/" + filename + ".png"));
+			} catch(Exception e){
+				JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Error loading color theme", "Error", JOptionPane.ERROR_MESSAGE);
+				e.printStackTrace();
+				return null;
+			}
+		}else{
+			try {
+				colorTheme = ImageIO.read(new File(filename));
+			} catch(Exception e){
+				JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Error loading color theme", "Error", JOptionPane.ERROR_MESSAGE);
+				e.printStackTrace();
+				return null;
+			}
+		}
+		for(int i = 0; i < colorTheme.getHeight(); i++){
+			for(int j = 0; j < colorTheme.getWidth(); j++){
+				colors.add(new Color(colorTheme.getRGB(j, i)));
+			}
+		}
+		return colors;
 	}
 }
