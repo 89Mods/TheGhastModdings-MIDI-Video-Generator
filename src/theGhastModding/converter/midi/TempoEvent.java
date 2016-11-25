@@ -7,7 +7,7 @@ public class TempoEvent extends MIDIEvent {
 	private boolean used;
 	
 	public TempoEvent(long tick, float bpm, int mpqn){
-		super(tick);
+		super(tick, true, (byte)0x51);
 		this.bpm = bpm;
 		this.mpqn = mpqn;
 		used = false;

@@ -7,7 +7,7 @@ public class NoteOff extends MIDIEvent {
 	private int channel;
 	
 	public NoteOff(long tick, int noteValue, int velocity, int channel){
-		super(tick);
+		super(tick, false, (byte)(0x80 + channel));
 		this.noteValue = noteValue;
 		this.velocity = velocity;
 		this.channel = channel;

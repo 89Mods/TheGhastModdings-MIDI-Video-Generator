@@ -2,6 +2,8 @@ package theGhastModding.converter.midi;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -18,6 +20,86 @@ public class Track {
 	
 	public Track(){
 		events = new ArrayList<MIDIEvent>();
+	}
+	
+	public boolean loadTrackToPagefile(FileInputStream stream, FileOutputStream fos) throws Exception {
+		lengthInTicks = 0;
+		byte[] indentifier = new byte[4];
+		stream.read(indentifier);
+		String s = new String(indentifier);
+		if(!s.equals("MTrk")){
+			JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Error loading MIDI: Track identifier not MTrk", "Error", JOptionPane.ERROR_MESSAGE);
+			return false;
+		}
+		byte[] headerSize = new byte[4];
+		stream.read(headerSize);
+		int size = bytesToInt(headerSize);
+		byte[] data = new byte[size];
+		stream.read(data);
+		ByteArrayInputStream byteStream = new ByteArrayInputStream(data);
+		boolean loop = true;
+		MIDIEvent e;
+		while(byteStream.available() > 0 && loop){
+			e = loadEvent(byteStream);
+			if(e instanceof EndOfTrackEvent){
+				loop = false;
+			}
+			if(e != null){
+				writeEventToPagefile(fos, e);
+				if(e.getTick() > lengthInTicks){
+					lengthInTicks = e.getTick();
+				}
+			}
+			if(e instanceof NoteOn){
+				notecount++;
+			}
+			e = null;
+		}
+		byteStream.close();
+		return true;
+	}
+	
+	private ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+	
+	public byte[] longToBytes(long x) {
+	    buffer = ByteBuffer.allocate(Long.BYTES/*Thats 8 bytes*/);
+	    buffer.putLong(x);
+	    return buffer.array();
+	}
+	
+	public byte[] intToBytes(int x) {
+	    buffer = ByteBuffer.allocate(Integer.BYTES/*Thats 4 bytes*/);
+	    buffer.putInt(x);
+	    return buffer.array();
+	}
+	
+	private void writeEventToPagefile(FileOutputStream fos, MIDIEvent event) throws Exception {
+		if(!event.getIsMeta()){
+			if(event instanceof NoteOn){
+				NoteOn on = (NoteOn)event;
+				fos.write(event.getSignature());
+				fos.write((byte)on.getVelocity());
+				fos.write((byte)on.getNoteValue());
+				fos.write(longToBytes(on.getTick()));
+			}else if(event instanceof NoteOff){
+				NoteOff off = (NoteOff)event;
+				fos.write(event.getSignature());
+				fos.write((byte)off.getVelocity());
+				fos.write((byte)off.getNoteValue());
+				fos.write(longToBytes(off.getTick()));
+			}
+			return;
+		}else{
+			if(event instanceof TempoEvent){
+				TempoEvent tempo = (TempoEvent)event;
+				fos.write((byte)0xff);
+				fos.write(tempo.getSignature());
+				fos.write(longToBytes(tempo.getTick()));
+				fos.write((byte)4);
+				fos.write(intToBytes(tempo.getMpqn()));
+			}
+			return;
+		}
 	}
 	
 	public boolean loadTrack(FileInputStream stream) throws Exception {
@@ -126,14 +208,8 @@ public class Track {
 				}
 			}
 			if(meta == 0x90 || meta == 0x91 || meta == 0x92 || meta == 0x93 || meta == 0x94 || meta == 0x95 || meta == 0x96 || meta == 0x97 || meta == 0x98 || meta == 0x99 || meta == 0x9A || meta == 0x9B || meta == 0x9C || meta == 0x9D || meta == 0x9E || meta == 0x9F){
-				/*if(total > MIDILoader.tickLimit){
-					return null;
-				}*/
 				return new NoteOn(total, value1, value2, meta - 0x90);
 			}else if(meta == 0x80 || meta == 0x81 || meta == 0x82 || meta == 0x83 || meta == 0x84 || meta == 0x85 || meta == 0x86 || meta == 0x87 || meta == 0x88 || meta == 0x89 || meta == 0x8A || meta == 0x8B || meta == 0x8C || meta == 0x8D || meta == 0x8E || meta == 0x8F){
-				/*if(total > MIDILoader.tickLimit){
-					return null;
-				}*/
 				return new NoteOff(total, value1, value2, meta - 0x80);
 			}else{
 				return null;
