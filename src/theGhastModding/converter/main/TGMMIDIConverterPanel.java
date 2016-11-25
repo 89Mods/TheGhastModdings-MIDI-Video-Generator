@@ -66,9 +66,6 @@ public class TGMMIDIConverterPanel extends JPanel implements Runnable {
 		        int option = mp4Selector.showOpenDialog(TGMMIDIConverter.frame);
 		        if(option == JFileChooser.APPROVE_OPTION){
 		        	File selectedMp4File = mp4Selector.getSelectedFile();
-		        	if(!selectedMp4File.getName().endsWith(".mp4")){
-		        		selectedMp4File = new File(selectedMp4File.getPath() + ".mp4");
-		        	}
 		        	if(selectedMp4File.exists()){
 		        		int option2 = JOptionPane.showConfirmDialog(TGMMIDIConverter.frame, "The selected file allready exists. Do you want to overwrite that file?", "Warning", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 		        		if(option2 != 0){
@@ -113,17 +110,6 @@ public class TGMMIDIConverterPanel extends JPanel implements Runnable {
 				}
 			);
 		fileMenu.add(openMidiItem);
-		JMenuItem cancelItem = new JMenuItem("Cancel conversion");
-		cancelItem.addActionListener(
-				new ActionListener(){
-					public void actionPerformed(ActionEvent event){
-						if(m2v != null && converterThread.isAlive()){
-							m2v.cancel();
-						}
-					}
-				}
-			);
-		fileMenu.add(cancelItem);
 		exitItem = new JMenuItem("Exit");
 		exitItem.addActionListener(
 				new ActionListener(){

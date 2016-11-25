@@ -14,7 +14,7 @@ import javax.swing.SwingConstants;
 public class AboutDialog extends JDialog {
 	public AboutDialog(JFrame c) {
 		super(c,"About");
-		this.setPreferredSize(new Dimension(470,190));
+		this.setPreferredSize(new Dimension(470,170));
 		this.setLocationRelativeTo(c);
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		getContentPane().setLayout(null);
@@ -28,7 +28,7 @@ public class AboutDialog extends JDialog {
 					}
 				}
 			);
-		btnOk.setBounds(187, 127, 89, 23);
+		btnOk.setBounds(173, 103, 89, 23);
 		getContentPane().add(btnOk);
 		
 		JLabel lblMidiPlayerBy = new JLabel(TGMMIDIConverter.NAME + " version " + TGMMIDIConverter.VERSION + " by TheGhastModding");
@@ -43,18 +43,8 @@ public class AboutDialog extends JDialog {
 		
 		JLabel contact = new JLabel("Contact: joshiiplays@gmail.com");
 		contact.setHorizontalAlignment(SwingConstants.CENTER);
-		contact.setBounds(10, 51, 417, 16);
+		contact.setBounds(10, 51, 417, 14);
 		getContentPane().add(contact);
-		
-		JLabel lblCredits = new JLabel("Credits:");
-		lblCredits.setHorizontalAlignment(SwingConstants.CENTER);
-		lblCredits.setBounds(10, 79, 442, 14);
-		getContentPane().add(lblCredits);
-		
-		JLabel lblKeyboardTextureBy = new JLabel("Keyboard texture by KaleidonKep99");
-		lblKeyboardTextureBy.setHorizontalAlignment(SwingConstants.CENTER);
-		lblKeyboardTextureBy.setBounds(10, 104, 442, 14);
-		getContentPane().add(lblKeyboardTextureBy);
 		
 		/*JLabel lblImage = new JLabel(new ImageIcon(TGMMIDIConverter.frame.getIconImage()));
 		lblImage.setBounds(10, 78, 64, 48);

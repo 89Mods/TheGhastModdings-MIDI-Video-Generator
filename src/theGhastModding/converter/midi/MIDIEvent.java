@@ -3,25 +3,23 @@ package theGhastModding.converter.midi;
 public abstract class MIDIEvent {
 	
 	private long tick;
-	private boolean isMeta;
-	private byte signature;
+	private boolean used;
 	
-	public MIDIEvent(long tick, boolean isMeta, byte signature){
-		this.tick = tick * MIDILoader.multiplier;
-		this.isMeta = isMeta;
-		this.signature = signature;
+	public MIDIEvent(long tick){
+		this.tick = tick;
+		used = false;
 	}
 	
 	public long getTick(){
 		return tick;
 	}
 	
-	public boolean getIsMeta(){
-		return isMeta;
+	public boolean isUsed() {
+		return used;
 	}
 	
-	public byte getSignature(){
-		return signature;
+	public void setUsed(boolean used) {
+		this.used = used;
 	}
 	
 }

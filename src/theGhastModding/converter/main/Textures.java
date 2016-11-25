@@ -12,8 +12,6 @@ public class Textures {
 	public BufferedImage whitenormal;
 	public BufferedImage whitepressed;
 	public BufferedImage keys;
-	public BufferedImage whitenormal2;
-	public BufferedImage whitepressed2;
 	
 	public Textures() throws Exception {
 		loadTextures();
@@ -26,8 +24,6 @@ public class Textures {
 		whitenormal = ImageIO.read(this.getClass().getResourceAsStream("/keys/whitenormal.png"));
 		whitepressed = ImageIO.read(this.getClass().getResourceAsStream("/keys/whitepressed.png"));
 		keys = ImageIO.read(this.getClass().getResourceAsStream("/keys.png"));
-		whitenormal2 = ImageIO.read(this.getClass().getResourceAsStream("/keys/whitenormal2.png"));
-		whitepressed2 = ImageIO.read(this.getClass().getResourceAsStream("/keys/whitepressed2.png"));
 	}
 	
 }
