@@ -2,14 +2,14 @@ package theGhastModding.converter.main;
 
 public class Note {
 	
-	private long start;
-	private long end;
-	private int pitch;
-	private int track;
-	private int velocity;
-	private boolean onPlayed;
-	private boolean offPlayed;
-	private int channel;
+	private long start = 0;
+	private long end = 0;
+	private int pitch = 0;
+	private int track = 0;
+	private int velocity = 0;
+	private boolean onPlayed = true;
+	private boolean offPlayed = true;
+	private int channel = 0;
 	
 	public Note(long start, long end, int pitch, int track, int velocity, int channel) {
 		super();
@@ -21,6 +21,17 @@ public class Note {
 		offPlayed = false;
 		this.velocity = velocity;
 		this.channel = channel;
+	}
+	
+	public boolean equals(Object o){
+		if(o instanceof Note == false){
+			return false;
+		}
+		Note n = (Note)o;
+		if(n.getStart() == start && n.getEnd() == end && n.getPitch() == pitch && n.getTrack() == track && n.getVelocity() == velocity && n.isOnPlayed() == onPlayed && n.isOffPlayed() == offPlayed && n.getChannel() == channel){
+			return true;
+		}
+		return false;
 	}
 	
 	public int getTrack(){

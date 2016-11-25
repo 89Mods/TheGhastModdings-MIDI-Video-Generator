@@ -39,6 +39,10 @@ public class SettingsDialog extends JDialog {
 	private JButton btnLoadBackgroundimage;
 	public BufferedImage backgroundImage = null;
 	public JCheckBox chckbxShowNoteCounter;
+	public boolean pagefile = false;
+	public boolean channelColoring;
+	public JSpinner spinner_1;
+	private JCheckBox chckbxPagefileMode;
 	
 	public SettingsDialog(JFrame frame){
 		super(frame, "Settings");
@@ -63,8 +67,8 @@ public class SettingsDialog extends JDialog {
 		getContentPane().add(lblFps);
 		
 		comboBox = new JComboBox<String>();
-		comboBox.setModel(new DefaultComboBoxModel<String>(new String[] {"1080p", "720p", "480p", "320p"}));
-		comboBox.setSelectedIndex(1);
+		comboBox.setModel(new DefaultComboBoxModel<String>(new String[] {"4K", "1080p", "720p", "480p", "320p"}));
+		comboBox.setSelectedIndex(2);
 		comboBox.setBounds(78, 33, 106, 25);
 		getContentPane().add(comboBox);
 		
@@ -83,6 +87,10 @@ public class SettingsDialog extends JDialog {
 		chckbxShowNoteCounter.setBounds(188, 93, 184, 24);
 		getContentPane().add(chckbxShowNoteCounter);
 		
+		JCheckBox chckbxUseChannelColoring = new JCheckBox("Use channel coloring");
+		chckbxUseChannelColoring.setBounds(188, 121, 178, 24);
+		getContentPane().add(chckbxUseChannelColoring);
+		
 		JButton btnOk = new JButton("OK");
 		btnOk.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -91,6 +99,8 @@ public class SettingsDialog extends JDialog {
 				}else{
 					trackColours = loadIntegratedColorThemeFromID(comboBox_2.getSelectedIndex());
 				}
+				channelColoring = chckbxUseChannelColoring.isSelected();
+				pagefile = chckbxPagefileMode.isSelected();
 				makeInvisible();
 			}
 		});
@@ -98,11 +108,14 @@ public class SettingsDialog extends JDialog {
 		getContentPane().add(btnOk);
 		
 		lblZoom = new JLabel("Zoom:");
+		lblZoom.setEnabled(true);
+		lblZoom.setVisible(true);
 		lblZoom.setBounds(6, 97, 55, 16);
 		getContentPane().add(lblZoom);
 		
 		spinner = new JSpinner();
-		spinner.setEnabled(false);
+		spinner.setVisible(true);
+		spinner.setEnabled(true);
 		spinner.setModel(new SpinnerNumberModel(10, 10, 100, 1));
 		spinner.setBounds(78, 95, 106, 20);
 		getContentPane().add(spinner);
@@ -170,6 +183,18 @@ public class SettingsDialog extends JDialog {
 		});
 		btnLoadBackgroundimage.setBounds(190, 33, 182, 26);
 		getContentPane().add(btnLoadBackgroundimage);
+		
+		JLabel lblTrackLimiter = new JLabel("Track limiter (0 = infinite):");
+		lblTrackLimiter.setBounds(198, 154, 168, 16);
+		getContentPane().add(lblTrackLimiter);
+		
+		spinner_1 = new JSpinner();
+		spinner_1.setBounds(253, 177, 47, 20);
+		getContentPane().add(spinner_1);
+		
+		chckbxPagefileMode = new JCheckBox("Pagefile mode");
+		chckbxPagefileMode.setBounds(188, 208, 112, 24);
+		getContentPane().add(chckbxPagefileMode);
 		
 		this.setResizable(false);
 		pack();
