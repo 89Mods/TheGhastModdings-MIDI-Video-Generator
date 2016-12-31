@@ -394,7 +394,6 @@ public class MidiToVideo implements Runnable {
 			frameWidth = 640;
 			frameHeight = 360;
 		}
-		zoom = Integer.parseInt(TGMMIDIConverterPanel.settings.spinner.getValue().toString());
 		fancyNotes = TGMMIDIConverterPanel.settings.chckbxUseFancyNotes.isSelected();
 		fancyPiano = TGMMIDIConverterPanel.settings.chckbxUseFancyPiano.isSelected();
 		noteCounter = TGMMIDIConverterPanel.settings.chckbxShowNoteCounter.isSelected();
@@ -433,6 +432,7 @@ public class MidiToVideo implements Runnable {
 		int FPS = Integer.parseInt(TGMMIDIConverterPanel.settings.comboBox_1.getSelectedItem().toString());
 		double nanosecondsPerFrame = (1D / (double)FPS) * 1000000000D;
 		AWTSequenceEncoder8Bit enc = null;
+		PreviewWindow preview = null;
 		try {
 			enc = AWTSequenceEncoder8Bit.createSequenceEncoder8Bit(mp4, FPS);
 			double tickPosition = 0;
@@ -459,9 +459,10 @@ public class MidiToVideo implements Runnable {
 			for(int i = 0; i < keyStates.length; i++){
 				keyStates[i] = new KeyState();
 			}
-			keyboardHeight = (int)((double)frameHeight / 100D * 8.5D);
+			keyboardHeight = (int)((double)frameHeight / 100D * 12.75D);
 			blackKeyHeight = (int)((double)keyboardHeight / 100D * 63.125D);
 			totalPlayedNotes = 0;
+			preview = new PreviewWindow();
 			while(tickPosition <= midiLength){
 				timerNow+=nanosecondsPerFrame;
 				tickPosition += ((((double)timerNow - (double)timerThen)/1000000000D) * TPS);
@@ -470,23 +471,28 @@ public class MidiToVideo implements Runnable {
 				if(tickPosition > midiLength){
 					continue;
 				}
-				for(int i = 0; i < tempos.size(); i++){
-					if(tempos.get(i) != null){
-						if(tempos.get(i).getTick() <= tickPosition && !tempos.get(i).isUsed()){
-							if(tempos.get(i).getTick() > d && tempoToApply == -1){
-								d = tempos.get(i).getTick();
-								tempoToApply = i;
+				while(true){
+					for(int i = 0; i < tempos.size(); i++){
+						if(tempos.get(i) != null){
+							if(tempos.get(i).getTick() <= tickPosition && !tempos.get(i).isUsed()){
+								if(tempos.get(i).getTick() > d && tempoToApply == -1){
+									d = tempos.get(i).getTick();
+									tempoToApply = i;
+								}
 							}
 						}
 					}
-				}
-				if(d >= 0 && tempoToApply >= 0){
-					TPS = (tempos.get(tempoToApply).getBpm() / 60) * resolution;
-					tempos.get(tempoToApply).setUsed(true);
-					d = -1;
-					tempoToApply = -1;
+					if(d >= 0 && tempoToApply >= 0){
+						TPS = (tempos.get(tempoToApply).getBpm() / 60) * resolution;
+						tempos.get(tempoToApply).setUsed(true);
+						d = -1;
+						tempoToApply = -1;
+					}else{
+						break;
+					}
 				}
 				currentFrame = renderSingleFrame(tickPosition, slices, TPS);
+				preview.updatePreview(currentFrame);
 				if(currentFrame != null){
 					enc.encodeImage(currentFrame);
 				}else{
@@ -498,6 +504,7 @@ public class MidiToVideo implements Runnable {
 				counter++;
 			}
 			enc.finish();
+			preview.setVisible(false);
 			System.err.println("Number of frames in video: " + Integer.toString(counter));
 		}catch(Exception e){
 			JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Error creating video", "Error", JOptionPane.ERROR_MESSAGE);
@@ -509,6 +516,9 @@ public class MidiToVideo implements Runnable {
 				}
 			}
 			e.printStackTrace();
+			if(preview != null){
+				preview.setVisible(false);
+			}
 			return;
 		}
 	}
@@ -517,7 +527,6 @@ public class MidiToVideo implements Runnable {
 	
 	private int frameWidth = 640;
 	private int frameHeight = 360;
-	private int zoom = 50;
 	
 	private KeyState[] keyStates;
 	public static boolean[] isWhiteKey = new boolean[]{
@@ -596,8 +605,8 @@ public class MidiToVideo implements Runnable {
 							}
 						}
 						if(!(n.getStart() <= position && n.getEnd() <= position)){
-						endOffset = (int)((position + frameHeight - n.getEnd()) * ((double)zoom / 10D));
-						offset = (int)((position + frameHeight - n.getStart()) * ((double)zoom / 10D));
+						endOffset = (int)((position + frameHeight - n.getEnd()));
+						offset = (int)((position + frameHeight - n.getStart()));
 						if(endOffset < 0){
 							endOffset = 0;
 						}
@@ -659,8 +668,8 @@ public class MidiToVideo implements Runnable {
 							}
 						}
 						if(!(n.getStart() <= position && n.getEnd() <= position)){
-						endOffset = (int)((position + frameHeight - n.getEnd()) * ((double)zoom / 10D));
-						offset = (int)((position + frameHeight - n.getStart()) * ((double)zoom / 10D));
+						endOffset = (int)((position + frameHeight - n.getEnd()));
+						offset = (int)((position + frameHeight - n.getStart()));
 						if(endOffset < 0){
 							endOffset = 0;
 						}

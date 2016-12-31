@@ -6,7 +6,7 @@ public class ProgramChangeEvent extends MIDIEvent {
 	private int channel;
 	
 	public ProgramChangeEvent(long tick, int program, int channel) {
-		super(tick);
+		super(tick, false, (byte)0xC0);
 		this.program = program;
 		this.channel = channel;
 	}

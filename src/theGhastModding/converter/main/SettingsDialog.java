@@ -2,27 +2,31 @@ package theGhastModding.converter.main;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.List;
 
-import javax.swing.JDialog;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JComboBox;
 import javax.imageio.ImageIO;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
-import java.awt.event.ActionListener;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.awt.event.ActionEvent;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
+import theGhastModding.converter.midi.MIDILoader;
 
 @SuppressWarnings("serial")
 public class SettingsDialog extends JDialog {
@@ -50,7 +54,7 @@ public class SettingsDialog extends JDialog {
 		setLocationRelativeTo(frame);
 		trackColours = loadColorTheme("Default", true);
 		setModal(true);
-		setPreferredSize(new Dimension(390,330));
+		setPreferredSize(new Dimension(390,350));
 		getContentPane().setLayout(null);
 		
 		chckbxUseFancyNotes = new JCheckBox("Use fancy Notes");
@@ -101,22 +105,22 @@ public class SettingsDialog extends JDialog {
 				}
 				channelColoring = chckbxUseChannelColoring.isSelected();
 				pagefile = chckbxPagefileMode.isSelected();
+				MIDILoader.multiplier = Integer.parseInt(spinner.getValue().toString());
 				makeInvisible();
 			}
 		});
-		btnOk.setBounds(6, 263, 98, 26);
+		btnOk.setBounds(6, 283, 98, 26);
 		getContentPane().add(btnOk);
 		
-		lblZoom = new JLabel("Zoom:");
+		lblZoom = new JLabel("Notespeed:");
 		lblZoom.setEnabled(true);
 		lblZoom.setVisible(true);
-		lblZoom.setBounds(6, 97, 55, 16);
+		lblZoom.setBounds(6, 97, 70, 16);
 		getContentPane().add(lblZoom);
 		
 		spinner = new JSpinner();
 		spinner.setVisible(true);
-		spinner.setEnabled(true);
-		spinner.setModel(new SpinnerNumberModel(10, 10, 100, 1));
+		spinner.setModel(new SpinnerNumberModel(1, 1, 10, 1));
 		spinner.setBounds(78, 95, 106, 20);
 		getContentPane().add(spinner);
 		
@@ -195,6 +199,70 @@ public class SettingsDialog extends JDialog {
 		chckbxPagefileMode = new JCheckBox("Pagefile mode");
 		chckbxPagefileMode.setBounds(188, 208, 112, 24);
 		getContentPane().add(chckbxPagefileMode);
+		
+		JFileChooser xmlChooser = new JFileChooser();
+		xmlChooser.setDialogTitle("Choose a PFA Config.xml");
+		xmlChooser.setFileFilter(new FileNameExtensionFilter("XML files", "xml", "XML"));
+		JButton btnConvertAPfa = new JButton("Convert a PFA Config.xml to color theme image");
+		JFileChooser saveImageChooser = new JFileChooser();
+		saveImageChooser.setDialogTitle("Save image");
+		saveImageChooser.setFileFilter(new FileNameExtensionFilter("PNG files", "png", "PNG"));
+		btnConvertAPfa.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if(xmlChooser.showOpenDialog(TGMMIDIConverter.frame) == JFileChooser.APPROVE_OPTION){
+					if(!xmlChooser.getSelectedFile().exists()){
+						JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "The selected file doesn't exist", "Error", JOptionPane.ERROR_MESSAGE);
+						return;
+					}
+					BufferedImage image = new BufferedImage(4, 4, BufferedImage.TYPE_INT_RGB);
+					try {
+						int x = 0;
+						int y = 0;
+						BufferedReader reader = new BufferedReader(new FileReader(xmlChooser.getSelectedFile()));
+						String line = "lol";
+						while(line != null){
+							line = reader.readLine();
+							if(line != null && line.contains("<Color ")){
+								String[] colors = line.split("\"");
+								Color c = new Color(Integer.parseInt(colors[1]), Integer.parseInt(colors[3]), Integer.parseInt(colors[5]));
+								image.setRGB(x, y, c.getRGB());
+								x++;
+								if(x == 4){
+									x = 0;
+									y++;
+								}
+							}
+						}
+						reader.close();
+					}catch(Exception e2){
+						e2.printStackTrace();
+						JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Error converting xml to color theme image", "Error", JOptionPane.ERROR_MESSAGE);
+						return;
+					}
+					if(saveImageChooser.showSaveDialog(TGMMIDIConverter.frame) == JFileChooser.APPROVE_OPTION){
+						File f = saveImageChooser.getSelectedFile();
+						if(!f.getName().endsWith(".png")){
+							f = new File(f.getPath() + ".png");
+						}
+						if(f.exists()){
+							int option = JOptionPane.showConfirmDialog(TGMMIDIConverter.frame, "The selected file allready exists. Overwrite it?", "lol", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+							if(option != 0){
+								return;
+							}
+						}
+						try {
+							ImageIO.write(image, "png", f);
+						}catch(Exception e2){
+							e2.printStackTrace();
+							JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Error saving image", "Error", JOptionPane.ERROR_MESSAGE);
+							return;
+						}
+					}
+				}
+			}
+		});
+		btnConvertAPfa.setBounds(6, 245, 366, 26);
+		getContentPane().add(btnConvertAPfa);
 		
 		this.setResizable(false);
 		pack();

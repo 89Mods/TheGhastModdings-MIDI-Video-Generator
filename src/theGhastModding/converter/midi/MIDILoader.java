@@ -48,6 +48,7 @@ public class MIDILoader {
 	
 	private void loadMidi(FileInputStream stream) throws Exception {
 		tracks = new ArrayList<Track>();
+		multiplier = Integer.parseInt(TGMMIDIConverterPanel.settings.spinner.getValue().toString());
 		byte[] indentifier = new byte[4];
 		stream.read(indentifier);
 		String s = new String(indentifier);
