@@ -170,6 +170,7 @@ public class PagefileSlice extends Slice {
 	}
 	
 	public void loadFromPagefile(File f) throws Exception {
+		if(notes == null) notes = new ArrayList<Note>();
 		FileInputStream fis = new FileInputStream(f);
 		while(fis.available() > 0){
 			try {

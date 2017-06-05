@@ -23,6 +23,8 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
@@ -47,6 +49,8 @@ public class SettingsDialog extends JDialog {
 	public boolean channelColoring;
 	public JSpinner spinner_1;
 	private JCheckBox chckbxPagefileMode;
+	public boolean transparentNoets = false;
+	private int progress = 0;
 	
 	public SettingsDialog(JFrame frame){
 		super(frame, "Settings");
@@ -109,7 +113,7 @@ public class SettingsDialog extends JDialog {
 				makeInvisible();
 			}
 		});
-		btnOk.setBounds(6, 283, 98, 26);
+		btnOk.setBounds(6, 282, 250, 26);
 		getContentPane().add(btnOk);
 		
 		lblZoom = new JLabel("Notespeed:");
@@ -120,7 +124,7 @@ public class SettingsDialog extends JDialog {
 		
 		spinner = new JSpinner();
 		spinner.setVisible(true);
-		spinner.setModel(new SpinnerNumberModel(1, 1, 10, 1));
+		spinner.setModel(new SpinnerNumberModel(1, 1, 100, 1));
 		spinner.setBounds(78, 95, 106, 20);
 		getContentPane().add(spinner);
 		
@@ -129,7 +133,7 @@ public class SettingsDialog extends JDialog {
 		getContentPane().add(lblColorTheme);
 		
 		lblCustomTheme = new JLabel("Custom Theme:");
-		lblCustomTheme.setBounds(6, 179, 326, 16);
+		lblCustomTheme.setBounds(6, 179, 162, 16);
 		getContentPane().add(lblCustomTheme);
 		
 		JFileChooser imageSelector = new JFileChooser();
@@ -163,9 +167,90 @@ public class SettingsDialog extends JDialog {
 		lblCurrentImageNull.setBounds(190, 68, 182, 16);
 		getContentPane().add(lblCurrentImageNull);
 		
+		JButton btnA = new JButton("Don't press this");
+		btnA.setEnabled(false);
+		btnA.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				switch(progress){
+				case 0:
+					JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Error: null", "Error", JOptionPane.ERROR_MESSAGE);
+					break;
+				case 1:
+					JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Lmao! They actually went through all that for an error message! How hillarious!", "LMAO", JOptionPane.WARNING_MESSAGE);
+					break;
+				case 2:
+					JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Wait. You can read this, can't you? Well. In that case: please stop pressing the button now. You should move on now. Go render some videos.", "...", JOptionPane.INFORMATION_MESSAGE);
+					break;
+				case 3:
+					JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Which part of \"Don't press\" did you not understand?", "Don't press", JOptionPane.ERROR_MESSAGE);
+					break;
+				case 4:
+					JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Oooooh. I see. You just keep pressing the button to read these messages. Well. Read THIS", "...", JOptionPane.INFORMATION_MESSAGE);
+					break;
+				case 20:
+					JOptionPane.showConfirmDialog(TGMMIDIConverter.frame, "Ok. Now i'm curious. What compells you to keep pressing the button?", "?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+					break;
+				case 21:
+					JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "What?......Oh. I didn't phrase these answers correctly, didn't i? Anyhow, please stop pressing the button now :3", ":3", JOptionPane.INFORMATION_MESSAGE);
+					break;
+				case 22:
+					JOptionPane.showMessageDialog(TGMMIDIConverter.frame, ">:3", ">:3", JOptionPane.WARNING_MESSAGE);
+					break;
+				case 23:
+					JOptionPane.showMessageDialog(TGMMIDIConverter.frame, ">>>>>>:3", ">>>>>>:3", JOptionPane.ERROR_MESSAGE);
+					break;
+				case 24:
+					JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "OK! THAT'S IT! PRESS IT ONE MORE TIME! I DARE YOU!", ">>>>>>>>>>>>>>>>>>>>>:3", JOptionPane.ERROR_MESSAGE);
+					break;
+				case 25:
+					JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "We're about to format your harddrive. Press \"OK\" to continue and \"Cancel\" to cancel.", "a", JOptionPane.QUESTION_MESSAGE);
+					break;
+				case 26:
+					JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "HA! Your files are gone now! How does that make you feel?", "?", JOptionPane.ERROR_MESSAGE);
+					break;
+				case 27:
+					JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Maybe i haven't made myself clear enough.", ".", JOptionPane.INFORMATION_MESSAGE);
+					break;
+				case 28:
+					JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "STOP", "STOP", JOptionPane.ERROR_MESSAGE);
+					break;
+				case 29:
+					JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "PRESSING", "PRESSING", JOptionPane.ERROR_MESSAGE);
+					break;
+				case 30:
+					JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "THE", "THE", JOptionPane.ERROR_MESSAGE);
+					break;
+				case 31:
+					JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "BUTTON", "BUTTON", JOptionPane.ERROR_MESSAGE);
+					break;
+				case 32:
+					JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Ok. That's it. I'm done", ".", JOptionPane.ERROR_MESSAGE);
+					try {
+						File f = new File("settings2.dat");
+						f.createNewFile();
+					}catch(Exception e){
+						e.printStackTrace();
+					}
+					System.exit("Button".hashCode());
+				}
+				if(progress > 4 && progress < 20){
+					JOptionPane.showMessageDialog(TGMMIDIConverter.frame, ".", ".", JOptionPane.INFORMATION_MESSAGE);
+				}
+				progress++;
+			}
+		});
+		btnA.setBounds(266, 284, 112, 23);
+		getContentPane().add(btnA);
+		
 		btnLoadBackgroundimage = new JButton("Load Background Image");
 		btnLoadBackgroundimage.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				if(chckbxUseFancyPiano.isSelected() && chckbxShowNoteCounter.isSelected() == false && chckbxUseFancyNotes.isSelected() == false && Integer.parseInt(spinner.getValue().toString()) == 7 && comboBox_1.getSelectedIndex() == 4 && comboBox.getSelectedIndex() == 2 && chckbxPagefileMode.isSelected() && Integer.parseInt(spinner_1.getValue().toString()) == 0 && btnA.isEnabled() == false){
+					if(!new File("settings2.dat").exists()){
+						btnA.setEnabled(true);
+						return;
+					}
+				}
 				imageSelector.setDialogTitle("Select background image");
 				int option = imageSelector.showOpenDialog(TGMMIDIConverter.frame);
 				if(option == JFileChooser.APPROVE_OPTION){
@@ -189,11 +274,11 @@ public class SettingsDialog extends JDialog {
 		getContentPane().add(btnLoadBackgroundimage);
 		
 		JLabel lblTrackLimiter = new JLabel("Track limiter (0 = infinite):");
-		lblTrackLimiter.setBounds(198, 154, 168, 16);
+		lblTrackLimiter.setBounds(188, 179, 135, 16);
 		getContentPane().add(lblTrackLimiter);
 		
 		spinner_1 = new JSpinner();
-		spinner_1.setBounds(253, 177, 47, 20);
+		spinner_1.setBounds(331, 177, 47, 20);
 		getContentPane().add(spinner_1);
 		
 		chckbxPagefileMode = new JCheckBox("Pagefile mode");
@@ -263,6 +348,16 @@ public class SettingsDialog extends JDialog {
 		});
 		btnConvertAPfa.setBounds(6, 245, 366, 26);
 		getContentPane().add(btnConvertAPfa);
+		
+		JCheckBox chckbxTransparentNotes = new JCheckBox("Transparent Notes");
+		chckbxTransparentNotes.addChangeListener(new ChangeListener(){
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				transparentNoets = chckbxTransparentNotes.isSelected();
+			}
+		});
+		chckbxTransparentNotes.setBounds(188, 151, 150, 23);
+		getContentPane().add(chckbxTransparentNotes);
 		
 		this.setResizable(false);
 		pack();

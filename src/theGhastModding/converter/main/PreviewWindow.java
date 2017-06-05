@@ -15,6 +15,7 @@ public class PreviewWindow extends JFrame {
 		this.getContentPane().setLayout(null);
 		this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		this.setLocationRelativeTo(TGMMIDIConverter.frame);
+		this.setResizable(false);
 		pack();
 		setVisible(true);
 	}

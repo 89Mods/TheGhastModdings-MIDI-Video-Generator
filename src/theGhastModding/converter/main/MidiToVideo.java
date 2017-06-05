@@ -31,7 +31,6 @@ public class MidiToVideo implements Runnable {
 	private File mp4;
 	public int progress = 0;
 	private List<Color> trackColors;
-	private List<BufferedImage> noteTrackImages;
 	private boolean channelColoring = false;
 	private boolean cancel = false;
 	
@@ -85,10 +84,10 @@ public class MidiToVideo implements Runnable {
 			List<Slice> slices = new ArrayList<Slice>();
 			double numSlices = midiLength / frameHeight;
 			numSlices = Math.ceil(numSlices);
-			/*if(numSlices > 2000){
+			if(numSlices > 2000){
 				numSlices = 2000;
 				midiLength = numSlices * frameHeight + frameHeight;
-			}*/
+			}
 			for(int i = 0; i < (int)numSlices; i++){
 				slices.add(new PagefileSlice(frameHeight, i * frameHeight));
 				((PagefileSlice)slices.get(i)).openOutStreamToFile(new File("pagefiles/pagefile_slice_" + Integer.toString(i) + ".dat"));
@@ -277,15 +276,39 @@ public class MidiToVideo implements Runnable {
 			List<MIDIEvent> events = null;
 			trackColors = new ArrayList<Color>();
 			for(Color c:TGMMIDIConverterPanel.settings.trackColours){
-				trackColors.add(c);
+				if(TGMMIDIConverterPanel.settings.transparentNoets){
+					trackColors.add(new Color(c.getRed(), c.getGreen(), c.getBlue(), 75));
+				}else{
+					trackColors.add(new Color(c.getRed(), c.getGreen(), c.getBlue()));
+				}
 			}
-			if(channelColoring){
-				for(int i = 0; i < 16; i++){
-					trackColors.add(new Color(100 + rnd.nextInt(140),100 + rnd.nextInt(140),100 + rnd.nextInt(140)));
+			if(TGMMIDIConverterPanel.settings.channelColoring){
+				for(int i = 0; i < 20; i++){
+					Color c = null;
+					if(TGMMIDIConverterPanel.settings.transparentNoets){
+						c = new Color(100 + rnd.nextInt(140),100 + rnd.nextInt(140),100 + rnd.nextInt(140), 75);
+					}else{
+						c = new Color(100 + rnd.nextInt(140),100 + rnd.nextInt(140),100 + rnd.nextInt(140));
+					}
+					if(c.getRed() < 200 && c.getGreen() < 200 && c.getBlue() < 200){
+						i--;
+						continue;
+					}
+					trackColors.add(c);
 				}
 			}else{
-				for(int i = 0; i < ml.getTrackCount(); i++){
-					trackColors.add(new Color(100 + rnd.nextInt(140),100 + rnd.nextInt(140),100 + rnd.nextInt(140)));
+				for(int i = 0; i < ml.getTrackCount() + 2; i++){
+					Color c = null;
+					if(TGMMIDIConverterPanel.settings.transparentNoets){
+						c = new Color(100 + rnd.nextInt(140),100 + rnd.nextInt(140),100 + rnd.nextInt(140), 75);
+					}else{
+						c = new Color(100 + rnd.nextInt(140),100 + rnd.nextInt(140),100 + rnd.nextInt(140));
+					}
+					if(c.getRed() < 200 && c.getGreen() < 200 && c.getBlue() < 200){
+						i--;
+						continue;
+					}
+					trackColors.add(c);
 				}
 			}
 			for(int i = 0; i < ml.getTrackCount(); i++){
@@ -419,12 +442,10 @@ public class MidiToVideo implements Runnable {
 			JOptionPane.showMessageDialog(TGMMIDIConverter.frame, "Error loading MIDI", "Error", JOptionPane.ERROR_MESSAGE);
 			return;
 		}
-		noteTrackImages = new ArrayList<BufferedImage>();
 		coloredKeyboardTexturesWhite = new ArrayList<BufferedImage>();
 		coloredKeyboardTexturesWhite2 = new ArrayList<BufferedImage>();
 		coloredKeyboardTexturesBlack = new ArrayList<BufferedImage>();
 		for(Color c:trackColors){
-			noteTrackImages.add(colorImage(c, TGMMIDIConverterPanel.textures.note));
 			coloredKeyboardTexturesWhite.add(colorImage(c, TGMMIDIConverterPanel.textures.whitepressed));
 			coloredKeyboardTexturesWhite2.add(colorImage(c, TGMMIDIConverterPanel.textures.whitepressed2));
 			coloredKeyboardTexturesBlack.add(colorImage(c, TGMMIDIConverterPanel.textures.blackpressed));
@@ -493,11 +514,7 @@ public class MidiToVideo implements Runnable {
 				}
 				currentFrame = renderSingleFrame(tickPosition, slices, TPS);
 				preview.updatePreview(currentFrame);
-				if(currentFrame != null){
-					enc.encodeImage(currentFrame);
-				}else{
-					System.err.println("Warning! Null frame detected!");
-				}
+				enc.encodeImage(currentFrame);
 				if(cancel){
 					break;
 				}
@@ -623,7 +640,69 @@ public class MidiToVideo implements Runnable {
 								g.setColor(Color.BLACK);
 								g.drawRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
 							}else{
-								g.drawImage(channelColoring ? noteTrackImages.get(n.getChannel()) : noteTrackImages.get(n.getTrack()), (int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset, null);
+								if(frameWidth == 720){
+									g.setColor(channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack()));
+									g.fillRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
+									//graphics.setColor(Color.BLACK);
+									Color col = channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack());
+									g.setColor(new Color(col.getRed() - 118 > 0 ? col.getRed() - 118 : 0, col.getGreen() - 118 > 0 ? col.getGreen() - 118 : 0, col.getBlue() - 118 > 0 ? col.getBlue() - 118 : 0));
+									g.drawRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
+									//graphics.drawLine((int)(keyLength * (double)n.getPitch()) + 1, endOffset - 1, 1, offset - endOffset - 2);
+									g.setColor(new Color(col.getRed() - 90 > 0 ? col.getRed() - 90 : 0, col.getGreen() - 90 > 0 ? col.getGreen() - 90 : 0, col.getBlue() - 90 > 0 ? col.getBlue() - 90 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 1), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 1), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 80 > 0 ? col.getRed() - 80 : 0, col.getGreen() - 80 > 0 ? col.getGreen() - 80 : 0, col.getBlue() - 80 > 0 ? col.getBlue() - 80 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 2), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 2), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 70 > 0 ? col.getRed() - 70 : 0, col.getGreen() - 70 > 0 ? col.getGreen() - 70 : 0, col.getBlue() - 70 > 0 ? col.getBlue() - 70 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 3), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 3), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 60 > 0 ? col.getRed() - 60 : 0, col.getGreen() - 60 > 0 ? col.getGreen() - 60 : 0, col.getBlue() - 60 > 0 ? col.getBlue() - 60 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 4), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 4), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 50 > 0 ? col.getRed() - 50 : 0, col.getGreen() - 50 > 0 ? col.getGreen() - 50 : 0, col.getBlue() - 50 > 0 ? col.getBlue() - 50 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 5), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 5), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 40 > 0 ? col.getRed() - 40 : 0, col.getGreen() - 40 > 0 ? col.getGreen() - 40 : 0, col.getBlue() - 40 > 0 ? col.getBlue() - 40 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 6), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 6), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 30 > 0 ? col.getRed() - 30 : 0, col.getGreen() - 30 > 0 ? col.getGreen() - 30 : 0, col.getBlue() - 30 > 0 ? col.getBlue() - 30 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 7), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 7), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 20 > 0 ? col.getRed() - 20 : 0, col.getGreen() - 20 > 0 ? col.getGreen() - 20 : 0, col.getBlue() - 20 > 0 ? col.getBlue() - 20 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 8), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 8), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 10 > 0 ? col.getRed() - 10 : 0, col.getGreen() - 10 > 0 ? col.getGreen() - 10 : 0, col.getBlue() - 10 > 0 ? col.getBlue() - 10 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 9), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 9), endOffset + (offset - endOffset - 1));
+								} else if(frameWidth == 1920){
+									g.setColor(channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack()));
+									g.fillRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
+									Color col = channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack());
+									g.setColor(new Color(col.getRed() - 118 > 0 ? col.getRed() - 118 : 0, col.getGreen() - 118 > 0 ? col.getGreen() - 118 : 0, col.getBlue() - 118 > 0 ? col.getBlue() - 118 : 0));
+									g.drawRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
+									for(int llll = 1; llll <= 14; llll++){
+										g.setColor(new Color((int)((double)col.getRed() - (90D - ((double)(llll - 1) * 6.4D))) > 0 ? (int)((double)col.getRed() - (90D - ((double)(llll - 1) * 6.4D))) : 0, (int)((double)col.getGreen() - (90D - ((double)(llll - 1) * 6.4D))) > 0 ? (int)((double)col.getGreen() - (90D - ((double)(llll - 1) * 6.4D))) : 0, (int)((double)col.getBlue() - (90D - ((double)(llll - 1) * 6.4D))) > 0 ? (int)((double)col.getBlue() - (90D - ((double)(llll - 1) * 6.4D))) : 0));
+										g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - llll), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - llll), endOffset + (offset - endOffset - 1));
+									}
+								} else if(frameWidth == 3840){
+									g.setColor(channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack()));
+									g.fillRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
+									Color col = channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack());
+									g.setColor(new Color(col.getRed() - 118 > 0 ? col.getRed() - 118 : 0, col.getGreen() - 118 > 0 ? col.getGreen() - 118 : 0, col.getBlue() - 118 > 0 ? col.getBlue() - 118 : 0));
+									g.drawRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
+									for(int llll = 1; llll <= 14; llll++){
+										g.setColor(new Color((int)((double)col.getRed() - (90D - ((double)(llll - 1) * 3.1D))) > 0 ? (int)((double)col.getRed() - (90D - ((double)(llll - 1) * 3.1D))) : 0, (int)((double)col.getGreen() - (90D - ((double)(llll - 1) * 3.1D))) > 0 ? (int)((double)col.getGreen() - (90D - ((double)(llll - 1) * 3.1D))) : 0, (int)((double)col.getBlue() - (90D - ((double)(llll - 1) * 3.1D))) > 0 ? (int)((double)col.getBlue() - (90D - ((double)(llll - 1) * 3.1D))) : 0));
+										g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - llll), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - llll), endOffset + (offset - endOffset - 1));
+									}
+								}else{
+									g.setColor(channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack()));
+									g.fillRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
+									Color col = channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack());
+									g.setColor(new Color(col.getRed() - 118 > 0 ? col.getRed() - 118 : 0, col.getGreen() - 118 > 0 ? col.getGreen() - 118 : 0, col.getBlue() - 118 > 0 ? col.getBlue() - 118 : 0));
+									g.drawRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
+									g.setColor(new Color(col.getRed() - 90 > 0 ? col.getRed() - 90 : 0, col.getGreen() - 90 > 0 ? col.getGreen() - 90 : 0, col.getBlue() - 90 > 0 ? col.getBlue() - 90 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 1), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 1), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 72 > 0 ? col.getRed() - 72 : 0, col.getGreen() - 72 > 0 ? col.getGreen() - 72 : 0, col.getBlue() - 72 > 0 ? col.getBlue() - 72 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 2), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 2), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 54 > 0 ? col.getRed() - 54 : 0, col.getGreen() - 54 > 0 ? col.getGreen() - 30 : 0, col.getBlue() - 54 > 0 ? col.getBlue() - 54 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 3), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 3), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 36 > 0 ? col.getRed() - 36 : 0, col.getGreen() - 36 > 0 ? col.getGreen() - 36 : 0, col.getBlue() - 36 > 0 ? col.getBlue() - 36 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 4), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 4), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 18 > 0 ? col.getRed() - 18 : 0, col.getGreen() - 18 > 0 ? col.getGreen() - 18 : 0, col.getBlue() - 18 > 0 ? col.getBlue() - 18 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 5), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 5), endOffset + (offset - endOffset - 1));
+								}
 							}
 						}
 					}
@@ -686,7 +765,69 @@ public class MidiToVideo implements Runnable {
 								g.setColor(Color.BLACK);
 								g.drawRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
 							}else{
-								g.drawImage(channelColoring ? noteTrackImages.get(n.getChannel()) : noteTrackImages.get(n.getTrack()), (int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset, null);
+								if(frameWidth == 720){
+									g.setColor(channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack()));
+									g.fillRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
+									//graphics.setColor(Color.BLACK);
+									Color col = channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack());
+									g.setColor(new Color(col.getRed() - 118 > 0 ? col.getRed() - 118 : 0, col.getGreen() - 118 > 0 ? col.getGreen() - 118 : 0, col.getBlue() - 118 > 0 ? col.getBlue() - 118 : 0));
+									g.drawRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
+									//graphics.drawLine((int)(keyLength * (double)n.getPitch()) + 1, endOffset - 1, 1, offset - endOffset - 2);
+									g.setColor(new Color(col.getRed() - 90 > 0 ? col.getRed() - 90 : 0, col.getGreen() - 90 > 0 ? col.getGreen() - 90 : 0, col.getBlue() - 90 > 0 ? col.getBlue() - 90 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 1), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 1), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 80 > 0 ? col.getRed() - 80 : 0, col.getGreen() - 80 > 0 ? col.getGreen() - 80 : 0, col.getBlue() - 80 > 0 ? col.getBlue() - 80 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 2), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 2), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 70 > 0 ? col.getRed() - 70 : 0, col.getGreen() - 70 > 0 ? col.getGreen() - 70 : 0, col.getBlue() - 70 > 0 ? col.getBlue() - 70 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 3), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 3), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 60 > 0 ? col.getRed() - 60 : 0, col.getGreen() - 60 > 0 ? col.getGreen() - 60 : 0, col.getBlue() - 60 > 0 ? col.getBlue() - 60 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 4), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 4), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 50 > 0 ? col.getRed() - 50 : 0, col.getGreen() - 50 > 0 ? col.getGreen() - 50 : 0, col.getBlue() - 50 > 0 ? col.getBlue() - 50 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 5), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 5), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 40 > 0 ? col.getRed() - 40 : 0, col.getGreen() - 40 > 0 ? col.getGreen() - 40 : 0, col.getBlue() - 40 > 0 ? col.getBlue() - 40 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 6), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 6), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 30 > 0 ? col.getRed() - 30 : 0, col.getGreen() - 30 > 0 ? col.getGreen() - 30 : 0, col.getBlue() - 30 > 0 ? col.getBlue() - 30 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 7), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 7), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 20 > 0 ? col.getRed() - 20 : 0, col.getGreen() - 20 > 0 ? col.getGreen() - 20 : 0, col.getBlue() - 20 > 0 ? col.getBlue() - 20 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 8), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 8), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 10 > 0 ? col.getRed() - 10 : 0, col.getGreen() - 10 > 0 ? col.getGreen() - 10 : 0, col.getBlue() - 10 > 0 ? col.getBlue() - 10 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 9), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 9), endOffset + (offset - endOffset - 1));
+								} else if(frameWidth == 1920){
+									g.setColor(channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack()));
+									g.fillRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
+									Color col = channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack());
+									g.setColor(new Color(col.getRed() - 118 > 0 ? col.getRed() - 118 : 0, col.getGreen() - 118 > 0 ? col.getGreen() - 118 : 0, col.getBlue() - 118 > 0 ? col.getBlue() - 118 : 0));
+									g.drawRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
+									for(int llll = 1; llll <= 14; llll++){
+										g.setColor(new Color((int)((double)col.getRed() - (90D - ((double)(llll - 1) * 6.4D))) > 0 ? (int)((double)col.getRed() - (90D - ((double)(llll - 1) * 6.4D))) : 0, (int)((double)col.getGreen() - (90D - ((double)(llll - 1) * 6.4D))) > 0 ? (int)((double)col.getGreen() - (90D - ((double)(llll - 1) * 6.4D))) : 0, (int)((double)col.getBlue() - (90D - ((double)(llll - 1) * 6.4D))) > 0 ? (int)((double)col.getBlue() - (90D - ((double)(llll - 1) * 6.4D))) : 0));
+										g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - llll), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - llll), endOffset + (offset - endOffset - 1));
+									}
+								} else if(frameWidth == 3840){
+									g.setColor(channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack()));
+									g.fillRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
+									Color col = channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack());
+									g.setColor(new Color(col.getRed() - 118 > 0 ? col.getRed() - 118 : 0, col.getGreen() - 118 > 0 ? col.getGreen() - 118 : 0, col.getBlue() - 118 > 0 ? col.getBlue() - 118 : 0));
+									g.drawRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
+									for(int llll = 1; llll <= 14; llll++){
+										g.setColor(new Color((int)((double)col.getRed() - (90D - ((double)(llll - 1) * 3.1D))) > 0 ? (int)((double)col.getRed() - (90D - ((double)(llll - 1) * 3.1D))) : 0, (int)((double)col.getGreen() - (90D - ((double)(llll - 1) * 3.1D))) > 0 ? (int)((double)col.getGreen() - (90D - ((double)(llll - 1) * 3.1D))) : 0, (int)((double)col.getBlue() - (90D - ((double)(llll - 1) * 3.1D))) > 0 ? (int)((double)col.getBlue() - (90D - ((double)(llll - 1) * 3.1D))) : 0));
+										g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - llll), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - llll), endOffset + (offset - endOffset - 1));
+									}
+								}else{
+									g.setColor(channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack()));
+									g.fillRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
+									Color col = channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack());
+									g.setColor(new Color(col.getRed() - 118 > 0 ? col.getRed() - 118 : 0, col.getGreen() - 118 > 0 ? col.getGreen() - 118 : 0, col.getBlue() - 118 > 0 ? col.getBlue() - 118 : 0));
+									g.drawRect((int)(keyLength * (double)n.getPitch()), endOffset, (int)keyLength, offset - endOffset);
+									g.setColor(new Color(col.getRed() - 90 > 0 ? col.getRed() - 90 : 0, col.getGreen() - 90 > 0 ? col.getGreen() - 90 : 0, col.getBlue() - 90 > 0 ? col.getBlue() - 90 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 1), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 1), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 72 > 0 ? col.getRed() - 72 : 0, col.getGreen() - 72 > 0 ? col.getGreen() - 72 : 0, col.getBlue() - 72 > 0 ? col.getBlue() - 72 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 2), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 2), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 54 > 0 ? col.getRed() - 54 : 0, col.getGreen() - 54 > 0 ? col.getGreen() - 30 : 0, col.getBlue() - 54 > 0 ? col.getBlue() - 54 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 3), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 3), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 36 > 0 ? col.getRed() - 36 : 0, col.getGreen() - 36 > 0 ? col.getGreen() - 36 : 0, col.getBlue() - 36 > 0 ? col.getBlue() - 36 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 4), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 4), endOffset + (offset - endOffset - 1));
+									g.setColor(new Color(col.getRed() - 18 > 0 ? col.getRed() - 18 : 0, col.getGreen() - 18 > 0 ? col.getGreen() - 18 : 0, col.getBlue() - 18 > 0 ? col.getBlue() - 18 : 0));
+									g.drawLine((int)(keyLength * (double)n.getPitch() + keyLength - 5), endOffset + 1, (int)(keyLength * (double)n.getPitch() + keyLength - 5), endOffset + (offset - endOffset - 1));
+								}
 							}
 						}
 					}

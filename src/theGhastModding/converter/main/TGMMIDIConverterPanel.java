@@ -47,6 +47,11 @@ public class TGMMIDIConverterPanel extends JPanel implements Runnable {
 		setLayout(null);
 		settings = new SettingsDialog(TGMMIDIConverter.frame);
 		
+		JFileChooser mp4Selector = new JFileChooser();
+		mp4Selector.setDialogTitle("Select where to save mp4");
+        FileFilter filter3 = new FileNameExtensionFilter("MP4 files", 
+                "mp4");  
+        mp4Selector.setFileFilter(filter3);
 		btnTest = new JButton("Convert the MIDI");
 		btnTest.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -58,11 +63,6 @@ public class TGMMIDIConverterPanel extends JPanel implements Runnable {
 	        		JOptionPane.showMessageDialog(null, "The selected MIDI doesnt exist anymore", "Error", JOptionPane.ERROR_MESSAGE);
 	        		return;
 				}
-				JFileChooser mp4Selector = new JFileChooser();
-				mp4Selector.setDialogTitle("Select where to save mp4");
-		        FileFilter filter3 = new FileNameExtensionFilter("MP4 files", 
-		                "mp4");  
-		        mp4Selector.setFileFilter(filter3);
 		        int option = mp4Selector.showOpenDialog(TGMMIDIConverter.frame);
 		        if(option == JFileChooser.APPROVE_OPTION){
 		        	File selectedMp4File = mp4Selector.getSelectedFile();
@@ -90,15 +90,15 @@ public class TGMMIDIConverterPanel extends JPanel implements Runnable {
 		TGMMIDIConverter.frame.setJMenuBar(bar);
 		fileMenu = new JMenu("File");
 		bar.add(fileMenu);
+		JFileChooser midiSelector = new JFileChooser();
+		midiSelector.setDialogTitle("Select MIDI to convert");
+        FileFilter filter77 = new FileNameExtensionFilter("MIDI files", 
+                "mid", "midi", "MID", "MIDI");  
+        midiSelector.setFileFilter(filter77);
 		openMidiItem = new JMenuItem("Select MIDI");
 		openMidiItem.addActionListener(
 				new ActionListener(){
 					public void actionPerformed(ActionEvent event){
-						JFileChooser midiSelector = new JFileChooser();
-						midiSelector.setDialogTitle("Select MIDI to convert");
-				        FileFilter filter3 = new FileNameExtensionFilter("MIDI files", 
-				                "mid", "midi", "MID", "MIDI");  
-				        midiSelector.setFileFilter(filter3);
 				        int option = midiSelector.showOpenDialog(TGMMIDIConverter.frame);
 				        if(option == JFileChooser.APPROVE_OPTION){
 				        	File selectedMidiFile = midiSelector.getSelectedFile();
