@@ -12,10 +12,6 @@ import theGhastModding.converter.main.Note;
 public class PagefileSlice extends Slice {
 	
 	private FileOutputStream writer = null;
-	private long length;
-	private long startTick;
-	private double longestNote = 0;
-	private List<Note> notes;
 	private boolean used;
 	private boolean loaded;
 	
@@ -52,20 +48,6 @@ public class PagefileSlice extends Slice {
 		writer = null;
 	}
 	
-	public synchronized void addNote(Note n) throws NullPointerException {
-		if(n == null){
-			return;
-		}
-		if(n.getEnd() - startTick > longestNote){
-			longestNote = n.getEnd() - startTick;
-		}
-		this.notes.add(n);
-	}
-	
-	public long getLength() {
-		return length;
-	}
-	
 	public synchronized List<Note> getNotes(){
 		return notes;
 	}
@@ -77,13 +59,6 @@ public class PagefileSlice extends Slice {
 	
 	public void setLength(long length) {
 		this.length = length;
-	}
-	
-	public double longestNote(){
-		if(longestNote < length){
-			return length;
-		}
-		return longestNote;
 	}
 	
 	public boolean writeNoteToPagefile(Note n) throws Exception {
@@ -99,6 +74,7 @@ public class PagefileSlice extends Slice {
 		writer.write(intToBytes(n.getTrack()));
 		writer.write((byte)n.getVelocity());
 		writer.write((byte)n.getChannel());
+		writer.flush();
 		return true;
 	}
 	

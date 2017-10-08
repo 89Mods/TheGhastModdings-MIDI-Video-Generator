@@ -22,7 +22,7 @@ public class Track {
 		events = new ArrayList<MIDIEvent>();
 	}
 	
-	public boolean loadTrackToPagefile(FileInputStream stream, FileOutputStream fos) throws Exception {
+	public boolean loadTrackToPagefile(FileInputStream stream, FileOutputStream fos, boolean largePiano) throws Exception {
 		lengthInTicks = 0;
 		byte[] indentifier = new byte[4];
 		stream.read(indentifier);
@@ -40,7 +40,7 @@ public class Track {
 		boolean loop = true;
 		MIDIEvent e;
 		while(byteStream.available() > 0 && loop){
-			e = loadEvent(byteStream);
+			e = loadEvent(byteStream, largePiano);
 			if(e instanceof EndOfTrackEvent){
 				loop = false;
 			}
@@ -81,12 +81,14 @@ public class Track {
 				fos.write((byte)on.getVelocity());
 				fos.write((byte)on.getNoteValue());
 				fos.write(longToBytes(on.getTick()));
+				fos.flush();
 			}else if(event instanceof NoteOff){
 				NoteOff off = (NoteOff)event;
 				fos.write(event.getSignature());
 				fos.write((byte)off.getVelocity());
 				fos.write((byte)off.getNoteValue());
 				fos.write(longToBytes(off.getTick()));
+				fos.flush();
 			}
 			return;
 		}else{
@@ -97,12 +99,13 @@ public class Track {
 				fos.write(longToBytes(tempo.getTick()));
 				fos.write((byte)4);
 				fos.write(intToBytes(tempo.getMpqn()));
+				fos.flush();
 			}
 			return;
 		}
 	}
 	
-	public boolean loadTrack(FileInputStream stream) throws Exception {
+	public boolean loadTrack(FileInputStream stream, boolean largePiano) throws Exception {
 		events = new ArrayList<MIDIEvent>();
 		lengthInTicks = 0;
 		byte[] indentifier = new byte[4];
@@ -117,10 +120,11 @@ public class Track {
 		int size = bytesToInt(headerSize);
 		byte[] data = new byte[size];
 		stream.read(data);
+		lastStatus = 0;
 		ByteArrayInputStream byteStream = new ByteArrayInputStream(data);
 		boolean loop = true;
 		while(byteStream.available() > 0 && loop){
-			MIDIEvent e = loadEvent(byteStream);
+			MIDIEvent e = loadEvent(byteStream, largePiano);
 			if(e instanceof EndOfTrackEvent){
 				loop = false;
 			}
@@ -165,8 +169,9 @@ public class Track {
 	}
 	
 	private long total = 0;
+	private int lastStatus = 0;
 	
-	private MIDIEvent loadEvent(ByteArrayInputStream byteStream) throws Exception {
+	private MIDIEvent loadEvent(ByteArrayInputStream byteStream, boolean largePiano) throws Exception {
 		long time = getVaribaleLengthValue(byteStream);
 		byteStream.mark(1);
 		if(time < 0){
@@ -174,7 +179,17 @@ public class Track {
 			return event;
 		}
 		total += time;
-		int meta = byteStream.read();
+		int meta = byteStream.read() & 0xFF;
+		if(!largePiano) {
+			if(meta >= 128) {
+				lastStatus = meta;
+			}
+			if(meta < 128 && lastStatus != 0) {
+				meta = lastStatus;
+				byteStream.reset();
+				byteStream.mark(1);
+			}
+		}
 		if(meta == 0xFF){
 			int type = byteStream.read() & 0xFF;
 			int length = (int)getVaribaleLengthValue(byteStream);
@@ -198,6 +213,14 @@ public class Track {
 			if(meta >= 0xF4 && meta <= 0xFF){
 				return null;
 			}
+			if(meta == 0xF0){
+				byteStream.read();
+				int lol = 0;
+				while(lol != 0xF7) {
+					lol = byteStream.read() & 0xFF;
+				}
+				return null;
+			}
 			int value1 = byteStream.read() & 0xFF;
 			int value2 = 0;
 			if((!(meta >= 0xC0 && meta <= 0xDF)) && meta != 0xF3 && meta != 0xF1){
@@ -208,24 +231,19 @@ public class Track {
 				}
 			}
 			if(meta == 0x90 || meta == 0x91 || meta == 0x92 || meta == 0x93 || meta == 0x94 || meta == 0x95 || meta == 0x96 || meta == 0x97 || meta == 0x98 || meta == 0x99 || meta == 0x9A || meta == 0x9B || meta == 0x9C || meta == 0x9D || meta == 0x9E || meta == 0x9F){
-				return new NoteOn(total, value1, value2, meta - 0x90);
+				if(value2 == 0) {
+					return new NoteOff(total, (value1 + (largePiano ? 60 : 0)) & 0xFF, value2, meta - 0x90);
+				}
+				return new NoteOn(total, (value1 + (largePiano ? 60 : 0)) & 0xFF, value2, meta - 0x90);
 			}else if(meta == 0x80 || meta == 0x81 || meta == 0x82 || meta == 0x83 || meta == 0x84 || meta == 0x85 || meta == 0x86 || meta == 0x87 || meta == 0x88 || meta == 0x89 || meta == 0x8A || meta == 0x8B || meta == 0x8C || meta == 0x8D || meta == 0x8E || meta == 0x8F){
-				return new NoteOff(total, value1, value2, meta - 0x80);
+				return new NoteOff(total, (value1 + (largePiano ? 60 : 0)) & 0xFF, value2, meta - 0x80);
 			}else{
 				return null;
 			}
-		}else if(meta == 0xF0 || meta == 0xF7){
-			int lol = 0;
-			byteStream.read();
-			while(lol != 0xF7){
-				lol = byteStream.read() & 0xFF;
-			}
-			return null;
 		}else{
 			byteStream.reset();
 			byteStream.read();
 		}
-		
 		return null;
 	}
 	

@@ -15,14 +15,16 @@ public class PreviewWindow extends JFrame {
 		this.getContentPane().setLayout(null);
 		this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		this.setLocationRelativeTo(TGMMIDIConverter.frame);
-		this.setResizable(false);
+		this.setResizable(true);
+		this.getContentPane().setMinimumSize(new Dimension(720, 480));
+		this.getContentPane().setMaximumSize(new Dimension(1920, 1080));
 		pack();
 		setVisible(true);
 	}
 	
 	public void updatePreview(BufferedImage image){
 		Graphics g = this.getContentPane().getGraphics();
-		g.drawImage(image, 0, 0, 720, 480, this);
+		g.drawImage(image, 0, 0, this.getContentPane().getWidth(), this.getContentPane().getHeight(), this);
 		g.dispose();
 	}
 	

@@ -2,6 +2,7 @@ package theGhastModding.converter.main;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.GraphicsEnvironment;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -15,6 +16,7 @@ import javax.imageio.ImageIO;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
@@ -23,12 +25,14 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.border.LineBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import theGhastModding.converter.midi.MIDILoader;
+import javax.swing.JPanel;
 
 @SuppressWarnings("serial")
 public class SettingsDialog extends JDialog {
@@ -51,6 +55,9 @@ public class SettingsDialog extends JDialog {
 	private JCheckBox chckbxPagefileMode;
 	public boolean transparentNoets = false;
 	private int progress = 0;
+	public boolean largePiano = false;
+	public JComboBox<String> noteCounterFontNameSelector;
+	public Color noteCounterTextColor = Color.WHITE;
 	
 	public SettingsDialog(JFrame frame){
 		super(frame, "Settings");
@@ -58,7 +65,7 @@ public class SettingsDialog extends JDialog {
 		setLocationRelativeTo(frame);
 		trackColours = loadColorTheme("Default", true);
 		setModal(true);
-		setPreferredSize(new Dimension(390,350));
+		setPreferredSize(new Dimension(560,350));
 		getContentPane().setLayout(null);
 		
 		chckbxUseFancyNotes = new JCheckBox("Use fancy Notes");
@@ -75,8 +82,8 @@ public class SettingsDialog extends JDialog {
 		getContentPane().add(lblFps);
 		
 		comboBox = new JComboBox<String>();
-		comboBox.setModel(new DefaultComboBoxModel<String>(new String[] {"4K", "1080p", "720p", "480p", "320p"}));
-		comboBox.setSelectedIndex(2);
+		comboBox.setModel(new DefaultComboBoxModel<String>(new String[] {"8K", "4K", "1440p", "1080p", "720p", "480p", "320p"}));
+		comboBox.setSelectedIndex(4);
 		comboBox.setBounds(78, 33, 106, 25);
 		getContentPane().add(comboBox);
 		
@@ -92,11 +99,11 @@ public class SettingsDialog extends JDialog {
 		getContentPane().add(comboBox_2);
 		
 		chckbxShowNoteCounter = new JCheckBox("Show note counter in video");
-		chckbxShowNoteCounter.setBounds(188, 93, 184, 24);
+		chckbxShowNoteCounter.setBounds(377, 6, 161, 24);
 		getContentPane().add(chckbxShowNoteCounter);
 		
 		JCheckBox chckbxUseChannelColoring = new JCheckBox("Use channel coloring");
-		chckbxUseChannelColoring.setBounds(188, 121, 178, 24);
+		chckbxUseChannelColoring.setBounds(190, 93, 178, 24);
 		getContentPane().add(chckbxUseChannelColoring);
 		
 		JButton btnOk = new JButton("OK");
@@ -113,7 +120,7 @@ public class SettingsDialog extends JDialog {
 				makeInvisible();
 			}
 		});
-		btnOk.setBounds(6, 282, 250, 26);
+		btnOk.setBounds(6, 284, 96, 24);
 		getContentPane().add(btnOk);
 		
 		lblZoom = new JLabel("Notespeed:");
@@ -159,6 +166,7 @@ public class SettingsDialog extends JDialog {
 		getContentPane().add(btnLoadCustomTheme);
 		
 		chckbxUseFancyPiano = new JCheckBox("Use fancy piano texture");
+		chckbxUseFancyPiano.setToolTipText("Unfancy Piano not supported by 256-key piano");
 		chckbxUseFancyPiano.setSelected(true);
 		chckbxUseFancyPiano.setBounds(157, 6, 175, 24);
 		getContentPane().add(chckbxUseFancyPiano);
@@ -239,7 +247,7 @@ public class SettingsDialog extends JDialog {
 				progress++;
 			}
 		});
-		btnA.setBounds(266, 284, 112, 23);
+		btnA.setBounds(112, 284, 112, 23);
 		getContentPane().add(btnA);
 		
 		btnLoadBackgroundimage = new JButton("Load Background Image");
@@ -274,21 +282,21 @@ public class SettingsDialog extends JDialog {
 		getContentPane().add(btnLoadBackgroundimage);
 		
 		JLabel lblTrackLimiter = new JLabel("Track limiter (0 = infinite):");
-		lblTrackLimiter.setBounds(188, 179, 135, 16);
+		lblTrackLimiter.setBounds(190, 154, 135, 16);
 		getContentPane().add(lblTrackLimiter);
 		
 		spinner_1 = new JSpinner();
-		spinner_1.setBounds(331, 177, 47, 20);
+		spinner_1.setBounds(321, 152, 47, 20);
 		getContentPane().add(spinner_1);
 		
 		chckbxPagefileMode = new JCheckBox("Pagefile mode");
-		chckbxPagefileMode.setBounds(188, 208, 112, 24);
+		chckbxPagefileMode.setBounds(190, 175, 112, 24);
 		getContentPane().add(chckbxPagefileMode);
 		
 		JFileChooser xmlChooser = new JFileChooser();
 		xmlChooser.setDialogTitle("Choose a PFA Config.xml");
 		xmlChooser.setFileFilter(new FileNameExtensionFilter("XML files", "xml", "XML"));
-		JButton btnConvertAPfa = new JButton("Convert a PFA Config.xml to color theme image");
+		JButton btnConvertAPfa = new JButton("PFA config to color theme converter");
 		JFileChooser saveImageChooser = new JFileChooser();
 		saveImageChooser.setDialogTitle("Save image");
 		saveImageChooser.setFileFilter(new FileNameExtensionFilter("PNG files", "png", "PNG"));
@@ -350,14 +358,98 @@ public class SettingsDialog extends JDialog {
 		getContentPane().add(btnConvertAPfa);
 		
 		JCheckBox chckbxTransparentNotes = new JCheckBox("Transparent Notes");
+		chckbxTransparentNotes.setEnabled(false);
 		chckbxTransparentNotes.addChangeListener(new ChangeListener(){
 			@Override
 			public void stateChanged(ChangeEvent e) {
 				transparentNoets = chckbxTransparentNotes.isSelected();
 			}
 		});
-		chckbxTransparentNotes.setBounds(188, 151, 150, 23);
+		chckbxTransparentNotes.setBounds(190, 122, 184, 23);
 		getContentPane().add(chckbxTransparentNotes);
+		chckbxUseFancyNotes.addChangeListener(new ChangeListener() {
+			@Override
+			public void stateChanged(ChangeEvent arg0) {
+				chckbxTransparentNotes.setEnabled(!chckbxUseFancyNotes.isSelected());
+				if(chckbxUseFancyNotes.isSelected()) {
+					chckbxTransparentNotes.setSelected(false);
+					transparentNoets = false;
+				}
+			}
+		});
+		
+		JCheckBox chckbxKeys = new JCheckBox("256 keys");
+		chckbxKeys.addChangeListener(new ChangeListener(){
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				largePiano = chckbxKeys.isSelected();
+			}
+		});
+		chckbxKeys.setToolTipText("Enables the 256-key piano, which makes it possible for MIDIs using the 256-key range to be loaded");
+		chckbxKeys.setBounds(190, 209, 76, 23);
+		getContentPane().add(chckbxKeys);
+		chckbxUseFancyPiano.addChangeListener(new ChangeListener() {
+			@Override
+			public void stateChanged(ChangeEvent arg0) {
+				chckbxKeys.setEnabled(chckbxUseFancyPiano.isSelected());
+				if(!chckbxUseFancyPiano.isSelected()) {
+					chckbxKeys.setSelected(false);
+					largePiano = false;
+				}
+			}
+		});
+		
+		JLabel lblSelectFontTo = new JLabel("Select font to use:");
+		lblSelectFontTo.setEnabled(false);
+		lblSelectFontTo.setBounds(381, 38, 157, 14);
+		getContentPane().add(lblSelectFontTo);
+		
+		noteCounterFontNameSelector = new JComboBox<String>();
+		noteCounterFontNameSelector.setEnabled(false);
+		noteCounterFontNameSelector.setModel(new DefaultComboBoxModel<String>(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames()));
+		noteCounterFontNameSelector.setBounds(381, 53, 157, 20);
+		getContentPane().add(noteCounterFontNameSelector);
+		
+		JButton btnSelectColorTo = new JButton("Select color to use");
+		btnSelectColorTo.setEnabled(false);
+		btnSelectColorTo.setBounds(381, 78, 157, 26);
+		getContentPane().add(btnSelectColorTo);
+		
+		JLabel lblCurrentColor = new JLabel("Current color:");
+		lblCurrentColor.setEnabled(false);
+		lblCurrentColor.setBounds(381, 107, 76, 14);
+		getContentPane().add(lblCurrentColor);
+		
+		JPanel panel = new JPanel();
+		panel.setBorder(new LineBorder(Color.BLUE));
+		panel.setEnabled(false);
+		panel.setBackground(Color.WHITE);
+		panel.setBounds(467, 107, 71, 14);
+		getContentPane().add(panel);
+		
+		JLabel lblMoreStuffComming = new JLabel("More stuff comming soon ;)");
+		lblMoreStuffComming.setBounds(392, 198, 146, 14);
+		getContentPane().add(lblMoreStuffComming);
+		
+		chckbxShowNoteCounter.addChangeListener(new ChangeListener() {
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				lblSelectFontTo.setEnabled(chckbxShowNoteCounter.isSelected());
+				noteCounterFontNameSelector.setEnabled(chckbxShowNoteCounter.isSelected());
+				btnSelectColorTo.setEnabled(chckbxShowNoteCounter.isSelected());
+				panel.setEnabled(chckbxShowNoteCounter.isSelected());
+			}
+		});
+		JColorChooser colorChooser = new JColorChooser();
+		JDialog colorChooserDialog = JColorChooser.createDialog(TGMMIDIConverter.frame, "Select text color", true, colorChooser, null, null);
+		btnSelectColorTo.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				colorChooserDialog.setVisible(true);
+				panel.setBackground(colorChooser.getColor());
+				noteCounterTextColor = colorChooser.getColor();
+			}
+		});
 		
 		this.setResizable(false);
 		pack();

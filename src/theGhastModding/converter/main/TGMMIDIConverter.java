@@ -13,10 +13,11 @@ import javax.swing.UIManager;
 public class TGMMIDIConverter {
 	
 	public static String NAME = "TheGhastModding's MIDI Video generator";
-	public static String VERSION = "1.6.1";
+	public static String VERSION = "1.8.0";
 	public static JFrame frame;
 	
 	public static void main(String[] args){
+		Updater.writeVersion(VERSION);
 		try {
 	        UIManager.setLookAndFeel(
 	                UIManager.getSystemLookAndFeelClassName());

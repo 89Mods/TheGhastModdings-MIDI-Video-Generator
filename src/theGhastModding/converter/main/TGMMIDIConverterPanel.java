@@ -4,6 +4,8 @@ import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.text.DecimalFormat;
+
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
@@ -33,6 +35,7 @@ public class TGMMIDIConverterPanel extends JPanel implements Runnable {
 	private JButton btnTest;
 	private JLabel labelProgress;
 	public static SettingsDialog settings;
+	private JLabel lblProgress;
 	
 	public TGMMIDIConverterPanel(){
 		setPreferredSize(new Dimension(500, 200));
@@ -52,7 +55,7 @@ public class TGMMIDIConverterPanel extends JPanel implements Runnable {
         FileFilter filter3 = new FileNameExtensionFilter("MP4 files", 
                 "mp4");  
         mp4Selector.setFileFilter(filter3);
-		btnTest = new JButton("Convert the MIDI");
+		btnTest = new JButton("Render Video");
 		btnTest.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				if(selectedMidi == null){
@@ -158,10 +161,10 @@ public class TGMMIDIConverterPanel extends JPanel implements Runnable {
 		progressBar = new JProgressBar();
 		progressBar.setBounds(12, 130, 476, 23);
 		progressBar.setMinimum(0);
-		progressBar.setMaximum(100);
+		progressBar.setMaximum(1000);
 		add(progressBar);
 		
-		JLabel lblProgress = new JLabel("Progress:");
+		lblProgress = new JLabel("Status: Idle");
 		lblProgress.setBounds(12, 102, 476, 16);
 		add(lblProgress);
 		
@@ -169,7 +172,7 @@ public class TGMMIDIConverterPanel extends JPanel implements Runnable {
 		lblMidiLoaded.setBounds(12, 39, 476, 16);
 		add(lblMidiLoaded);
 		
-		labelProgress = new JLabel("0%");
+		labelProgress = new JLabel(".00%");
 		labelProgress.setBounds(12, 165, 476, 16);
 		add(labelProgress);
 		
@@ -186,6 +189,7 @@ public class TGMMIDIConverterPanel extends JPanel implements Runnable {
 
 	@Override
 	public void run() {
+		DecimalFormat df = new DecimalFormat("#.00"); 
 		int TARGET_TPS = 25;
 		double tpsTargetTime = 1000000000D / TARGET_TPS;
 		double tpsTimer = System.nanoTime();
@@ -193,17 +197,24 @@ public class TGMMIDIConverterPanel extends JPanel implements Runnable {
 		while(running){
 			if(System.nanoTime() - tpsTimer >= tpsTargetTime){
 				if(converterThread != null){
-				if(converterThread.isAlive()){
-					this.progressBar.setValue(m2v.progress);
-					labelProgress.setText(m2v.progress + "%");
-					progressBar.repaint();
-				}else{
-					btnTest.setEnabled(true);
-					progressBar.setValue(0);
-					labelProgress.setText("0%");
-				}
+					if(converterThread.isAlive()){
+						this.progressBar.setValue(m2v.progress);
+						labelProgress.setText(df.format((double)m2v.progress / 10D) + "%");
+						lblProgress.setText("Status: " + m2v.status);
+						progressBar.repaint();
+					}else{
+						btnTest.setEnabled(true);
+						progressBar.setValue(0);
+						labelProgress.setText(".00%");
+						lblProgress.setText("Status: Idle");
+					}
 				}
 				tpsTimer = System.nanoTime();
+			}
+			try {
+				Thread.sleep(1);
+			}catch(Exception e) {
+				e.printStackTrace();
 			}
 		}
 	}

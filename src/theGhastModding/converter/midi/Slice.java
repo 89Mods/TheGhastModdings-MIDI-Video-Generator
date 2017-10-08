@@ -7,10 +7,10 @@ import theGhastModding.converter.main.Note;
 
 public class Slice {
 	
-	private List<Note> notes;
-	private long length;
-	private long startTick;
-	private double longestNote = 0;
+	protected List<Note> notes;
+	protected long length;
+	protected long startTick;
+	protected double longestNote = 0;
 	
 	public Slice(long length, long startTick){
 		this.length = length;
@@ -75,9 +75,6 @@ public class Slice {
 	}
 	
 	public double longestNote(){
-		if(longestNote < length){
-			return length;
-		}
 		return longestNote;
 	}
 	
