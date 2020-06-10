@@ -52,7 +52,7 @@ public class UpdateChecker {
 			e.printStackTrace();
 		}
 		if(!newVersion.startsWith("2")) {
-			return false;
+			//return false;
 		}
 		if(newVersion.contentEquals(MidiVideoGenMain.VERSION)){
 			return false;

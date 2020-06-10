@@ -15,7 +15,7 @@ public class MidiVideoGenMain {
 	
 	public static JFrame frame;
 	public static final String NAME = "TGM's MIDI Video Generator";
-	public static final String VERSION = "2.0.0_beta";
+	public static final String VERSION = "2.0.0";
 	
 	public static void main(String[] args) {
 		try {
