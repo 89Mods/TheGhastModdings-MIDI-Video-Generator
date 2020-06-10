@@ -1,0 +1,14 @@
+#version 400
+
+//Be carefull when changing in/out variables and do NOT remove uniform variables, since that will cause crashes
+in vec2 pass_textureCoords;
+
+out vec4 out_Color;
+
+uniform sampler2D textureSampler;
+
+void main(void){
+	
+	out_Color = texture2D(textureSampler, pass_textureCoords);
+	
+}
