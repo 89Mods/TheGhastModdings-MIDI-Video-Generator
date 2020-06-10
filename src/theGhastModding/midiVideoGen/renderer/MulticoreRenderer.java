@@ -3,9 +3,12 @@ package theGhastModding.midiVideoGen.renderer;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -20,13 +23,14 @@ public class MulticoreRenderer extends NotesRenderer {
 	private boolean fancyNotes;
 	private boolean channelColoring;
 	private double keyLength;
-	private List<Color> trackColors;
+	private Color[] trackColors;
+	private Color[] darkerColors;
 	private BufferedImage backgroundImage;
 	private int cores;
 	private boolean largeKeyboard;
 	private RenderThread[] ts;
 	
-	public MulticoreRenderer(int width, int height, boolean fancyNotes, boolean channelColoring, boolean largeKeyboard, double keyLength, List<Color> colors, BufferedImage backgroundImage, int cores) {
+	public MulticoreRenderer(int width, int height, boolean fancyNotes, boolean channelColoring, boolean largeKeyboard, double keyLength, Color[] colors, BufferedImage backgroundImage, int cores) {
 		this.width = width;
 		this.height = height;
 		this.fancyNotes = fancyNotes;
@@ -34,6 +38,13 @@ public class MulticoreRenderer extends NotesRenderer {
 		this.keyLength = keyLength;
 		this.trackColors = colors;
 		this.cores = cores;
+		if(!fancyNotes) {
+			this.darkerColors = new Color[colors.length];
+			for(int i = 0; i < colors.length; i++) {
+				Color col = colors[i];
+				this.darkerColors[i] = new Color(col.getRed() - 118 > 0 ? col.getRed() - 118 : 0, col.getGreen() - 118 > 0 ? col.getGreen() - 118 : 0, col.getBlue() - 118 > 0 ? col.getBlue() - 118 : 0);
+			}
+		}
 		if(backgroundImage != null) {
 			this.backgroundImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 			Graphics gg = this.backgroundImage.getGraphics();
@@ -115,7 +126,10 @@ public class MulticoreRenderer extends NotesRenderer {
 		}
 		
 		private int endOffset;
-		private int offset;
+		private int offset,dx;
+		
+		private Map<Rectangle, Color> colorCache = new HashMap<Rectangle, Color>();
+		private Rectangle ar = new Rectangle(0, 0, 0, 0);
 		
 		private void renderNote(Note n, Graphics2D graphics, int keyOffset){
 			if(!(n.getEnd() < tickPosition && n.getStart() > tickPosition + height)){
@@ -126,19 +140,28 @@ public class MulticoreRenderer extends NotesRenderer {
 				}
 				if(offset >= 0 && offset - endOffset >= 0){
 					if(!fancyNotes){
-						graphics.setColor(channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack()));
-						graphics.fillRect((int)(keyLength * (n.getPitch() - keyOffset)), endOffset, (int)keyLength, offset - endOffset);
-						Color col = channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack());
-						graphics.setColor(new Color(col.getRed() - 118 > 0 ? col.getRed() - 118 : 0, col.getGreen() - 118 > 0 ? col.getGreen() - 118 : 0, col.getBlue() - 118 > 0 ? col.getBlue() - 118 : 0));
-						graphics.drawRect((int)(keyLength * (n.getPitch() - keyOffset)), endOffset, (int)keyLength, offset - endOffset);
+						dx = (int)(keyLength * (n.getPitch() - keyOffset));
+						graphics.setColor(channelColoring ? trackColors[n.getChannel()] : trackColors[n.getTrack()]);
+						graphics.fillRect(dx, endOffset, (int)keyLength, offset - endOffset);
+						graphics.setColor(channelColoring ? darkerColors[n.getChannel()] : darkerColors[n.getTrack()]);
+						graphics.drawRect(dx, endOffset, (int)keyLength, offset - endOffset);
 					}else{
 						int widthHere = (int)(keyLength * (double)((n.getPitch() - keyOffset) + 1) - keyLength * (double)(n.getPitch() - keyOffset));
-						Color col = channelColoring ? trackColors.get(n.getChannel()) : trackColors.get(n.getTrack());
+						Color col = channelColoring ? trackColors[n.getChannel()] : trackColors[n.getTrack()];
 						graphics.setColor(new Color(col.getRed() - 118 > 0 ? col.getRed() - 118 : 0, col.getGreen() - 118 > 0 ? col.getGreen() - 118 : 0, col.getBlue() - 118 > 0 ? col.getBlue() - 118 : 0));
 						graphics.drawRect((int)(keyLength * (double)(n.getPitch() - keyOffset)), endOffset, widthHere - 1, offset - endOffset - 1);
 						double gradientStepSize = 90D / (double)widthHere;
 						for(int llll = 2; llll < widthHere; llll++){
-							graphics.setColor(new Color((int)((double)col.getRed() - (90D - ((double)(llll - 1) * gradientStepSize))) > 0 ? (int)((double)col.getRed() - (90D - ((double)(llll - 1) * gradientStepSize))) : 0, (int)((double)col.getGreen() - (90D - ((double)(llll - 1) * gradientStepSize))) > 0 ? (int)((double)col.getGreen() - (90D - ((double)(llll - 1) * gradientStepSize))) : 0, (int)((double)col.getBlue() - (90D - ((double)(llll - 1) * gradientStepSize))) > 0 ? (int)((double)col.getBlue() - (90D - ((double)(llll - 1) * gradientStepSize))) : 0));
+							ar.x = widthHere;
+							ar.y = llll;
+							ar.width = channelColoring ? n.getChannel() : n.getTrack();
+							ar.height = 0;
+							Color dCol = colorCache.get(ar);
+							if(dCol == null) {
+								dCol = new Color((int)((double)col.getRed() - (90D - ((double)(llll - 1) * gradientStepSize))) > 0 ? (int)((double)col.getRed() - (90D - ((double)(llll - 1) * gradientStepSize))) : 0, (int)((double)col.getGreen() - (90D - ((double)(llll - 1) * gradientStepSize))) > 0 ? (int)((double)col.getGreen() - (90D - ((double)(llll - 1) * gradientStepSize))) : 0, (int)((double)col.getBlue() - (90D - ((double)(llll - 1) * gradientStepSize))) > 0 ? (int)((double)col.getBlue() - (90D - ((double)(llll - 1) * gradientStepSize))) : 0);
+								colorCache.put(new Rectangle(ar.x, ar.y, ar.width, ar.height), dCol);
+							}
+							graphics.setColor(dCol);
 							graphics.drawLine((int)(keyLength * (double)(n.getPitch() - keyOffset) + widthHere - llll), endOffset + 1, (int)(keyLength * (double)(n.getPitch() - keyOffset) + widthHere - llll), endOffset + (offset - endOffset - 2));
 						}
 					}
@@ -151,6 +174,16 @@ public class MulticoreRenderer extends NotesRenderer {
 			gr.fillRect(0, 0, partImage.getWidth(), partImage.getHeight());
 		}
 		
+		private void clearCache() {
+			colorCache.clear();
+			ar = new Rectangle(0, 0, 0, 0);
+		}
+		
+	}
+	
+	@Override
+	public void reset() {
+		for(RenderThread rt:ts) rt.clearCache();
 	}
 	
 }

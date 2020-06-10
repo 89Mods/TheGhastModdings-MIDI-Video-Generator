@@ -2,26 +2,26 @@ package theGhastModding.midiVideoGen.midi;
 
 public class NoteOff extends MIDIEvent {
 	
-	private int noteValue;
-	private int velocity;
-	private int channel;
+	private short noteValue;
+	private short velocity;
+	private byte channel;
 	
-	public NoteOff(long tick, int noteValue, int velocity, int channel){
+	public NoteOff(long tick, short noteValue, short velocity, byte channel){
 		super(tick, false, (byte)(0x80 + channel));
 		this.noteValue = noteValue;
 		this.velocity = velocity;
 		this.channel = channel;
 	}
 	
-	public int getNoteValue(){
+	public short getNoteValue(){
 		return noteValue;
 	}
 	
-	public int getVelocity(){
+	public short getVelocity(){
 		return velocity;
 	}
 	
-	public int getChannel(){
+	public byte getChannel(){
 		return channel;
 	}
 	

@@ -9,4 +9,6 @@ public abstract class NotesRenderer {
 	
 	public abstract void render(List<Note> notes, Graphics2D g, long tick);
 	
+	public abstract void reset();
+	
 }

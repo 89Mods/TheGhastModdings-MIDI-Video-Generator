@@ -123,7 +123,7 @@ public class PagefileSlice extends Slice {
 			int track = bytesToInt(b);
 			int velocity = fis.read();
 			int channel = fis.read();
-			return new Note(start, end, pitch, track, velocity, channel);
+			return new Note(start, end, (short)pitch, track, (byte)velocity, (byte)channel);
 		} catch(Exception e){
 			e.printStackTrace();
 			return null;

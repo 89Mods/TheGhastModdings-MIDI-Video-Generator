@@ -4,14 +4,14 @@ public class Note {
 	
 	private long start = 0;
 	private long end = 0;
-	private int pitch = 0;
+	private short pitch = 0;
 	private int track = 0;
-	private int velocity = 0;
+	private byte velocity = 0;
 	private boolean onPlayed = true;
 	private boolean offPlayed = true;
-	private int channel = 0;
+	private byte channel = 0;
 	
-	public Note(long start, long end, int pitch, int track, int velocity, int channel) {
+	public Note(long start, long end, short pitch, int track, byte velocity, byte channel) {
 		super();
 		this.start = start;
 		this.end = end;
@@ -48,7 +48,7 @@ public class Note {
 	}
 	
 	public void setPitch(int pitch) {
-		this.pitch = pitch;
+		this.pitch = (short)pitch;
 	}
 	
 	public void setTrack(int track) {
@@ -60,7 +60,7 @@ public class Note {
 	}
 	
 	public void setVelocity(int velocity) {
-		this.velocity = velocity;
+		this.velocity = (byte)velocity;
 	}
 	
 	public boolean isOnPlayed() {
@@ -84,7 +84,7 @@ public class Note {
 	}
 	
 	public void setChannel(int channel) {
-		this.channel = channel;
+		this.channel = (byte)channel;
 	}
 	
 }

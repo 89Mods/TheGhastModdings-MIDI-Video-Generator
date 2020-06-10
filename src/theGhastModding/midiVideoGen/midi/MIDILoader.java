@@ -1,7 +1,6 @@
 package theGhastModding.midiVideoGen.midi;
 
 import java.io.File;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -104,14 +103,9 @@ public class MIDILoader {
 		}
 	}
 	
-	private ByteBuffer buffer;
-	
-	private int bytesToInt(byte[] lol){
-	    buffer = ByteBuffer.allocate(Integer.BYTES/*Thats 4 bytes*/);
-	    buffer.put(lol);
-		buffer.flip();
-		if(lol.length == 2) return buffer.getShort(0) & 0xFFFF;
-	    return buffer.getInt(0);
+	private int bytesToInt(byte[] lol) {
+		if(lol.length == 2) return ((lol[0] & 0xFF) << 8) | (lol[1] & 0xFF);
+		return ((lol[0] & 0xFF) << 24) | ((lol[1] & 0xFF) << 16) | ((lol[2] & 0xFF) << 8) | (lol[3] & 0xFF);
 	}
 	
 	public int getType(){

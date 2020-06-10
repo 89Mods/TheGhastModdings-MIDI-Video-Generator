@@ -3,7 +3,6 @@ package theGhastModding.midiVideoGen.midi;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,7 +66,7 @@ public class FullMIDILoader {
 				}
 				l++;
 				if(event instanceof NoteOn){
-					tempNotes.add(new Note(event.getTick(), -1, ((NoteOn) event).getNoteValue(),i, ((NoteOn) event).getVelocity(), ((NoteOn) event).getChannel()));
+					tempNotes.add(new Note(event.getTick(), -1, ((NoteOn) event).getNoteValue(), i, ((NoteOn) event).getVelocity(), ((NoteOn) event).getChannel()));
 				}
 				if(event instanceof TempoEvent){
 					boolean add = true;
@@ -143,7 +142,7 @@ public class FullMIDILoader {
 			byte[] longBytes = new byte[8];
 			fis.read(longBytes);
 			long tick = bytesToLong(longBytes);
-			return new NoteOn(tick, noteValue, velocity, signature - 0x90);
+			return new NoteOn(tick, (short)noteValue, (byte)velocity, (byte)(signature - 0x90));
 		}else
 		if(signature >= 0x80 && signature <= 0x8F){
 			int velocity = fis.read() & 0xff;
@@ -151,7 +150,7 @@ public class FullMIDILoader {
 			byte[] longBytes = new byte[8];
 			fis.read(longBytes);
 			long tick = bytesToLong(longBytes);
-			return new NoteOff(tick, noteValue, velocity, signature - 0x80);
+			return new NoteOff(tick, (short)noteValue, (short)velocity, (byte)(signature - 0x80));
 		}else
 		if(signature == 0xff){
 			signature = fis.read() & 0xff;
@@ -173,26 +172,12 @@ public class FullMIDILoader {
 		return null;
 	}
 	
-	private ByteBuffer buffer;
-	
-	public byte[] longToBytes(long x) {
-	    buffer = ByteBuffer.allocate(Long.BYTES/*Thats 8 bytes*/);
-	    buffer.putLong(x);
-	    return buffer.array();
+	private int bytesToInt(byte[] bytes) {
+		return ((bytes[0] & 0xFF) << 24) | ((bytes[1] & 0xFF) << 16) | ((bytes[2] & 0xFF) << 8) | (bytes[3] & 0xFF);
 	}
 	
-	public int bytesToInt(byte[] bytes) {
-	    buffer = ByteBuffer.allocate(Integer.BYTES);
-	    buffer.put(bytes);
-	    buffer.flip();
-	    return buffer.getInt();
-	}
-	
-	public long bytesToLong(byte[] bytes) {
-	    buffer = ByteBuffer.allocate(Long.BYTES);
-	    buffer.put(bytes);
-	    buffer.flip();
-	    return buffer.getLong();
+	private long bytesToLong(byte[] bytes) {
+		return ((bytes[0] & 0xFF) << 56L) | ((bytes[1] & 0xFF) << 48L) | ((bytes[2] & 0xFF) << 40L) | ((bytes[3] & 0xFF) << 32L) | ((bytes[4] & 0xFF) << 24L) | ((bytes[5] & 0xFF) << 16L) | ((bytes[6] & 0xFF) << 8L) | (long)(bytes[7] & 0xFF);
 	}
 	
 	private byte[] intToBytes(int i) {
@@ -201,6 +186,19 @@ public class FullMIDILoader {
 		  result[1] = (byte) (i >> 16);
 		  result[2] = (byte) (i >> 8);
 		  result[3] = (byte) (i /*>> 0*/);
+		  return result;
+	}
+	
+	private byte[] longToBytes(long i) {
+		  byte[] result = new byte[8];
+		  result[0] = (byte) (i >> 56);
+		  result[1] = (byte) (i >> 48);
+		  result[2] = (byte) (i >> 40);
+		  result[3] = (byte) (i >> 32);
+		  result[4] = (byte) (i >> 24);
+		  result[5] = (byte) (i >> 16);
+		  result[6] = (byte) (i >> 8);
+		  result[7] = (byte) (i /*>> 0*/);
 		  return result;
 	}
 	

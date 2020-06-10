@@ -245,9 +245,9 @@ public class Track {
 			}
 			//Handle note on's and note off's
 			if(meta >= 0x90 && meta <= 0x9F){
-				return new NoteOn(total, (value1 + (largePiano ? 60 : 0)) & 0xFF, value2, meta - 0x90);
+				return new NoteOn(total, (short)((value1 + (largePiano ? 60 : 0)) & 0xFF), (byte)value2, (byte)(meta - 0x90));
 			}else if(meta >= 0x80 && meta <= 0x8F){
-				return new NoteOff(total, (value1 + (largePiano ? 60 : 0)) & 0xFF, value2, meta - 0x80);
+				return new NoteOff(total, (short)((value1 + (largePiano ? 60 : 0)) & 0xFF), (byte)value2, (byte)(meta - 0x80));
 			}else{
 				return null;
 			}

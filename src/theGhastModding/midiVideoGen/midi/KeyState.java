@@ -8,9 +8,9 @@ public class KeyState {
 	private boolean isPressed;
 	private List<Integer> pressedTracks;
 	
-	public KeyState(){
+	public KeyState(int tracks){
 		isPressed = false;
-		pressedTracks = new ArrayList<Integer>();
+		pressedTracks = new ArrayList<Integer>(tracks);
 	}
 	
 	public boolean isPressed(){

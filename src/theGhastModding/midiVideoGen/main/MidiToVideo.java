@@ -5,7 +5,6 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -47,10 +46,10 @@ public class MidiToVideo implements Runnable {
 	private String preset;
 	private int crf;
 	
-	private List<Color> trackColors;
-	private List<BufferedImage> coloredKeyboardTexturesWhite;
-	private List<BufferedImage> coloredKeyboardTexturesWhite2;
-	private List<BufferedImage> coloredKeyboardTexturesBlack;
+	private Color[] trackColors;
+	private BufferedImage[] coloredKeyboardTexturesWhite;
+	private BufferedImage[] coloredKeyboardTexturesWhite2;
+	private BufferedImage[] coloredKeyboardTexturesBlack;
 	private int keyboardHeight;
 	private int blackKeyHeight;
 	private double keyLength;
@@ -77,15 +76,7 @@ public class MidiToVideo implements Runnable {
 	private Graphics2D g;
 	
 	public static final boolean[] isWhiteKey = new boolean[]{
-			true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,
-			false,true,false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,
-			false,true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,false,true,
-			false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,false,
-			true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,
-			false,true,false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,
-			false,true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,false,true,
-			false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,false,true,true,false,true,false,true,false,true,true,false,true,false,
-			true,true,false,true,false,true,false,true
+			true,false,true,false,true,true,false
 		};
 	
 	public MidiToVideo(File midi, File mp4, int cores) {
@@ -149,14 +140,14 @@ public class MidiToVideo implements Runnable {
 			noteCounterColor = MidiVideoGenPanel.settings.noteCounterTextColor;
 		}
 		channelColoring = MidiVideoGenPanel.settings.useChannelColoring;
-		largePiano = MidiVideoGenPanel.settings.useLargeKeyboard;
-		pagefileMode = MidiVideoGenPanel.settings.usePagefileMode;
+		largePiano =      MidiVideoGenPanel.settings.useLargeKeyboard;
+		pagefileMode =    MidiVideoGenPanel.settings.usePagefileMode;
 		backgroundImage = MidiVideoGenPanel.settings.backgroundImage;
-		a = MidiVideoGenPanel.settings.a;
-		notespeed = MidiVideoGenPanel.settings.notespeed;
-		fps = MidiVideoGenPanel.settings.fps;
-		preset = MidiVideoGenPanel.settings.preset;
-		crf = MidiVideoGenPanel.settings.crf;
+		a =               MidiVideoGenPanel.settings.a;
+		notespeed =       MidiVideoGenPanel.settings.notespeed;
+		fps =             MidiVideoGenPanel.settings.fps;
+		preset =          MidiVideoGenPanel.settings.preset;
+		crf =             MidiVideoGenPanel.settings.crf;
 		try {
 			FullMIDILoader loader = new FullMIDILoader(midi);
 			loader.load(largePiano, pagefileMode, notespeed, this);
@@ -175,12 +166,14 @@ public class MidiToVideo implements Runnable {
 			e.printStackTrace();
 			return;
 		}
-		trackColors = new ArrayList<Color>();
-		for(Color c:MidiVideoGenPanel.settings.noteColors){
+		int scNum = MidiVideoGenPanel.settings.noteColors.size();
+		trackColors = new Color[scNum + (channelColoring ? 20 : trackCount + 2)];
+		for(int i = 0; i < scNum; i++){
+			Color c = MidiVideoGenPanel.settings.noteColors.get(i);
 			if(MidiVideoGenPanel.settings.useTransparentNotes){
-				trackColors.add(new Color(c.getRed(), c.getGreen(), c.getBlue(), 75));
+				trackColors[i] = new Color(c.getRed(), c.getGreen(), c.getBlue(), 75);
 			}else{
-				trackColors.add(new Color(c.getRed(), c.getGreen(), c.getBlue()));
+				trackColors[i] = new Color(c.getRed(), c.getGreen(), c.getBlue());
 			}
 		}
 		Random rnd = new Random();
@@ -196,7 +189,7 @@ public class MidiToVideo implements Runnable {
 					i--;
 					continue;
 				}
-				trackColors.add(c);
+				trackColors[scNum + i] = c;
 			}
 		}else{
 			for(int i = 0; i < trackCount + 2; i++){
@@ -210,16 +203,17 @@ public class MidiToVideo implements Runnable {
 					i--;
 					continue;
 				}
-				trackColors.add(c);
+				trackColors[scNum + i] = c;
 			}
 		}
-		coloredKeyboardTexturesWhite = new ArrayList<BufferedImage>();
-		coloredKeyboardTexturesWhite2 = new ArrayList<BufferedImage>();
-		coloredKeyboardTexturesBlack = new ArrayList<BufferedImage>();
-		for(Color c:trackColors){
-			coloredKeyboardTexturesWhite.add(colorImage(c, MidiVideoGenPanel.textures.whitepressed));
-			coloredKeyboardTexturesWhite2.add(colorImage(c, MidiVideoGenPanel.textures.whitepressed2));
-			coloredKeyboardTexturesBlack.add(colorImage(c, MidiVideoGenPanel.textures.blackpressed));
+		coloredKeyboardTexturesWhite = new BufferedImage[trackColors.length];
+		coloredKeyboardTexturesWhite2 = new BufferedImage[trackColors.length];
+		coloredKeyboardTexturesBlack = new BufferedImage[trackColors.length];
+		for(int i = 0; i < trackColors.length; i++){
+			Color c = trackColors[i];
+			coloredKeyboardTexturesWhite[i] = colorImage(c, MidiVideoGenPanel.textures.whitepressed);
+			coloredKeyboardTexturesWhite2[i] = colorImage(c, MidiVideoGenPanel.textures.whitepressed2);
+			coloredKeyboardTexturesBlack[i] = colorImage(c, MidiVideoGenPanel.textures.blackpressed);
 		}
 		double nanosecondsPerFrame = (1D / (double)fps) * 1000000000D;
 		VideoEncoder encoder = null;
@@ -238,13 +232,15 @@ public class MidiToVideo implements Runnable {
 			img = new BufferedImage(frameWidth, frameHeight, BufferedImage.TYPE_INT_RGB);
 			g = (Graphics2D)img.getGraphics();
 			keyLength = (double)frameWidth / (largePiano ? 256D : 128D);
-			int rendererCores = cores / 2 > 0 ? cores / 2 : 1;
+			//int rendererCores = cores / 2 > 0 ? cores / 2 : 1;
+			int rendererCores = cores > 1 ? cores - 1 : 1;
 			if(rendererCores != 1) {
 				renderer = new MulticoreRenderer(frameWidth, frameHeight, fancyNotes, channelColoring, largePiano, keyLength, trackColors, backgroundImage, 4);
 			}else {
 				renderer = new CpuRenderer(frameWidth, frameHeight, fancyNotes, channelColoring, keyLength, trackColors, backgroundImage);
 			}
 			//renderer = new GPURenderer(frameWidth, frameHeight, channelColoring, keyLength, trackColors, backgroundImage);
+			renderer.reset();
 			double timerThen = 0;
 			double timerNow = -nanosecondsPerFrame;
 			tickPosition = 0;
@@ -288,7 +284,7 @@ public class MidiToVideo implements Runnable {
 			}
 			keyStates = new KeyState[(largePiano ? 256 : 128)];
 			for(int i = 0; i < keyStates.length; i++){
-				keyStates[i] = new KeyState();
+				keyStates[i] = new KeyState(trackCount);
 			}
 			keyboardHeight = (int)((double)frameHeight / 100D * 12.75D);
 			blackKeyHeight = (int)((double)keyboardHeight / 100D * 63.125D);
@@ -330,6 +326,7 @@ public class MidiToVideo implements Runnable {
 				}
 			}
 			status = "Finishing up";
+			renderer.reset();
 			notesToRender.clear();
 			for(int i = 0; i < allNoets.size(); i++) {
 				allNoets.remove(i).clear();
@@ -356,10 +353,10 @@ public class MidiToVideo implements Runnable {
 	private void renderPiano() {
 		updateKeyStates();
 		for(int i = 0; i < (largePiano ? 256 : 128); i++){
-			if(isWhiteKey[i]){
-				if(!isWhiteKey[i + 1]){
+			if(isWhiteKey[i % isWhiteKey.length]){
+				if(!isWhiteKey[(i + 1) % isWhiteKey.length]){
 					if(keyStates[i].isPressed()){
-						g.drawImage(coloredKeyboardTexturesWhite2.get(keyStates[i].pressedTracks().get(keyStates[i].pressedTracks().size() - 1)),  (int)(keyLength * (double)i - keyLength / 2D), frameHeight - keyboardHeight, (int)keyLength + (int)keyLength, keyboardHeight, null);
+						g.drawImage(coloredKeyboardTexturesWhite2[keyStates[i].pressedTracks().get(keyStates[i].pressedTracks().size() - 1)],  (int)(keyLength * (double)i - keyLength / 2D), frameHeight - keyboardHeight, (int)keyLength + (int)keyLength, keyboardHeight, null);
 					}else{
 						g.drawImage(MidiVideoGenPanel.textures.whitenormal2,  (int)(keyLength * (double)i - keyLength / 2D), frameHeight - keyboardHeight, (int)keyLength + (int)keyLength, keyboardHeight, null);
 					}
@@ -367,9 +364,9 @@ public class MidiToVideo implements Runnable {
 			}
 		}
 		for(int i = 0; i < (largePiano ? 256 : 128); i++){
-			if(isWhiteKey[i] && isWhiteKey[i + 1]){
+			if(isWhiteKey[i % isWhiteKey.length] && isWhiteKey[(i + 1) % isWhiteKey.length]){
 				if(keyStates[i].isPressed()){
-					g.drawImage(coloredKeyboardTexturesWhite.get(keyStates[i].pressedTracks().get(keyStates[i].pressedTracks().size() - 1)),  (int)(keyLength * (double)i - keyLength / 2D), frameHeight - keyboardHeight, (int)(keyLength + keyLength / 2D), keyboardHeight, null);
+					g.drawImage(coloredKeyboardTexturesWhite[keyStates[i].pressedTracks().get(keyStates[i].pressedTracks().size() - 1)],  (int)(keyLength * (double)i - keyLength / 2D), frameHeight - keyboardHeight, (int)(keyLength + keyLength / 2D), keyboardHeight, null);
 				}else{
 					g.drawImage(MidiVideoGenPanel.textures.whitenormal,  (int)(keyLength * (double)i - keyLength / 2D), frameHeight - keyboardHeight, (int)keyLength + (int)(keyLength / 2D), keyboardHeight, null);
 				}
@@ -378,9 +375,9 @@ public class MidiToVideo implements Runnable {
 		//FIXME: Buggy key
 		if(largePiano) g.drawImage(MidiVideoGenPanel.textures.whitenormal, (int)(keyLength * 256D) - (int)(keyLength / 2D), frameHeight - keyboardHeight, (int)keyLength + (int)(keyLength / 2D), keyboardHeight, null);
 		for(int i = 0; i < (largePiano ? 256 : 128); i++){
-			if(!isWhiteKey[i]){
+			if(!isWhiteKey[i % isWhiteKey.length]){
 				if(keyStates[i].isPressed()){
-					g.drawImage(coloredKeyboardTexturesBlack.get(keyStates[i].pressedTracks().get(keyStates[i].pressedTracks().size() - 1)),  (int)(keyLength * (double)i), frameHeight - keyboardHeight, (int)keyLength, blackKeyHeight, null);
+					g.drawImage(coloredKeyboardTexturesBlack[keyStates[i].pressedTracks().get(keyStates[i].pressedTracks().size() - 1)],  (int)(keyLength * (double)i), frameHeight - keyboardHeight, (int)keyLength, blackKeyHeight, null);
 				}else{
 					g.drawImage(MidiVideoGenPanel.textures.blacknormal, (int)(keyLength * (double)i), frameHeight - keyboardHeight, (int)keyLength, blackKeyHeight, null);
 				}
@@ -479,23 +476,15 @@ public class MidiToVideo implements Runnable {
 		int track = bytesToInt(b);
 		int velocity = fis.read();
 		int channel = fis.read();
-		return new Note(start, end, pitch, track, velocity, channel);
+		return new Note(start, end, (short)pitch, track, (byte)velocity, (byte)channel);
 	}
 	
-	private ByteBuffer buffer;
-	
-	public int bytesToInt(byte[] bytes) {
-	    buffer = ByteBuffer.allocate(Integer.BYTES);
-	    buffer.put(bytes);
-	    buffer.flip();
-	    return buffer.getInt();
+	private int bytesToInt(byte[] bytes) {
+		return ((bytes[0] & 0xFF) << 24) | ((bytes[1] & 0xFF) << 16) | ((bytes[2] & 0xFF) << 8) | (bytes[3] & 0xFF);
 	}
 	
-	public long bytesToLong(byte[] bytes) {
-	    buffer = ByteBuffer.allocate(Long.BYTES);
-	    buffer.put(bytes);
-	    buffer.flip();
-	    return buffer.getLong();
+	private long bytesToLong(byte[] bytes) {
+		return ((bytes[0] & 0xFF) << 56L) | ((bytes[1] & 0xFF) << 48L) | ((bytes[2] & 0xFF) << 40L) | ((bytes[3] & 0xFF) << 32L) | ((bytes[4] & 0xFF) << 24L) | ((bytes[5] & 0xFF) << 16L) | ((bytes[6] & 0xFF) << 8L) | (long)(bytes[7] & 0xFF);
 	}
 	
 	private void addNote(Note n) {

@@ -13,12 +13,12 @@ public class PreviewFrame extends JFrame {
 	
 	public PreviewFrame(JFrame frame) {
 		super("Preview");
-		setResizable(false);
+		//setResizable(false);
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		getContentPane().setLayout(null);
-		getContentPane().setPreferredSize(new Dimension(720, 480));
-		getContentPane().setMinimumSize(new Dimension(720, 480));
-		getContentPane().setSize(new Dimension(720, 480));
+		getContentPane().setPreferredSize(new Dimension(720, 405));
+		getContentPane().setMinimumSize(new Dimension(720, 405));
+		getContentPane().setSize(new Dimension(720, 405));
 		setLocationRelativeTo(frame);
 		pack();
 	}
